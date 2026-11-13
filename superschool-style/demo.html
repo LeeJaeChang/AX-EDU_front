@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>스타일 데모</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="superschool-style.css">
+</head>
+<body>
+
+<header class="mast">
+  <div class="wrap">
+    <a class="logo" href="#"><b style="font-size:1.25rem;line-height:40px">LOGO</b></a>
+    <span class="mast-tag">서비스 한 줄 소개</span>
+    <a class="btn mast-cta" href="#contact">도입 상담하기</a>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="기능">
+  <div class="wrap tabs-scroll"><div class="tablist" id="tablist"></div></div>
+</nav>
+
+<main>
+  <!-- 탭 1 -->
+  <article class="topic" id="overview" data-tab="개요">
+    <section class="t-hero">
+      <div class="wrap split">
+        <div class="split-copy">
+          <p class="eyebrow">기능 이름</p>
+          <h1>핵심 메시지 <em>강조 단어</em></h1>
+          <p class="lead">리드 문단입니다. 18px, 보조 텍스트 색, 최대 42rem 폭으로 읽기 편한 줄 길이를 유지합니다.</p>
+          <p>본문 문단은 16px, 줄간격 1.75, 한글 어절 단위 줄바꿈(keep-all)을 사용합니다.</p>
+        </div>
+        <figure class="mock" aria-label="화면 예시">
+          <div class="mock-top">
+            <div class="avatar" aria-hidden="true">민</div>
+            <div class="who"><b>김민준</b><span>2학년 3반 12번</span></div>
+            <div class="chips"><span class="chip alert">출결 이상 2</span><span class="chip">미제출 1</span></div>
+          </div>
+          <div class="tiles">
+            <div class="tile"><h4>출석률</h4><div class="big">88%</div><div class="bar"><i style="width:88%"></i></div><div class="sub">최근 7일 지각 2회</div></div>
+            <div class="tile"><h4>키워드</h4><div class="kw"><span>자료 해석</span><span>협업</span></div><div class="sub">제출 14 / 15</div></div>
+          </div>
+          <div class="comment"><div class="meta"><b>담임</b><span>11월 4일</span></div><p>코멘트 영역 예시입니다.</p></div>
+        </figure>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="head"><p class="eyebrow">숫자로 보기</p><h2>헤어라인 통계 그리드</h2></div>
+        <div class="figs">
+          <div class="fig"><b>192<small>학점</small></b><span>설명 텍스트</span></div>
+          <div class="fig"><b>2/3<small>이상</small></b><span>설명 텍스트</span></div>
+          <div class="fig"><b>3<small>시수</small></b><span>설명 텍스트</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="head"><p class="eyebrow">정의 표</p><h2>rows</h2></div>
+        <div class="rows">
+          <div class="row"><span class="k">항목</span><span class="v">값 설명</span><span class="w">부가 설명</span></div>
+          <div class="row hl"><span class="k">강조 행</span><span class="v">값 설명</span><span class="w">부가 설명</span></div>
+        </div>
+      </div>
+    </section>
+  </article>
+
+  <!-- 탭 2 -->
+  <article class="topic" id="components" data-tab="컴포넌트" hidden>
+    <section class="t-hero"><div class="wrap"><p class="eyebrow">컴포넌트</p><h1>카드와 흐름</h1></div></section>
+
+    <section>
+      <div class="wrap">
+        <div class="cards">
+          <div class="card"><span class="tag">문제</span><h3>카드 제목</h3><p>카드 설명은 15px 보조색.</p></div>
+          <div class="card"><span class="ktag">카테고리</span><h3>카드 제목 <span class="badge">예정</span></h3>
+            <ul><li><b>굵은 키워드</b> 목록 항목</li><li>목록 항목</li></ul></div>
+        </div>
+        <div class="compare" style="margin-top:24px">
+          <div class="before"><b>이전에는</b>흩어진 기록과 수기 작업</div>
+          <div class="after"><b>이제는</b>한 화면에서 이어지는 기록</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="head"><h2>가로 흐름</h2></div>
+        <ol class="flow">
+          <li><b>신청</b><span>설명</span></li>
+          <li><b>확정</b><span>설명</span></li>
+          <li><b>진행</b><span>설명</span></li>
+          <li><b>기록</b><span>설명</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="head"><h2>세로 타임라인 · 로드맵</h2></div>
+        <ol class="timeline" style="max-width:32rem">
+          <li><div><b>녹음</b><span>설명 텍스트</span></div></li>
+          <li><div><b>정리</b><span>설명 텍스트</span></div></li>
+          <li><div><b>요약</b><span>설명 텍스트</span></div></li>
+        </ol>
+        <div class="stages" style="margin-top:40px">
+          <div class="stage s1"><span class="stage-no">01. NOW</span><span class="stage-tag">현재</span><h3>첫 단계</h3><ul><li>항목</li></ul></div>
+          <i class="stage-arrow" aria-hidden="true">→</i>
+          <div class="stage s2"><span class="stage-no">02. NEXT</span><span class="stage-tag">다음</span><h3>두 번째</h3><ul><li>항목</li></ul></div>
+          <i class="stage-arrow" aria-hidden="true">→</i>
+          <div class="stage s3"><span class="stage-no">03. LATER</span><span class="stage-tag">확장</span><h3>세 번째</h3><ul><li>항목</li></ul></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="head"><h2>스크린샷 프레임</h2></div>
+        <div class="shots">
+          <figure class="shot"><div class="frame"><div style="aspect-ratio:16/10;background:var(--bg)"></div></div><figcaption><b>화면 이름</b>캡션 설명</figcaption></figure>
+          <figure class="shot"><div class="frame todo"><div style="aspect-ratio:16/10"></div></div><figcaption><b>준비 중</b>점선 프레임</figcaption></figure>
+        </div>
+      </div>
+    </section>
+  </article>
+</main>
+
+<section class="cta" id="contact">
+  <div class="wrap">
+    <h2>마무리 메시지</h2>
+    <p>짧은 설명 문장.</p>
+    <div class="cta-row"><a class="btn" href="#">주요 행동</a><a class="btn ghost" href="#">보조 행동</a></div>
+  </div>
+</section>
+
+<script src="tabs.js"></script>
+</body>
+</html>
