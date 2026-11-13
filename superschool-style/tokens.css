@@ -1,0 +1,94 @@
+/* =========================================================
+   Superschool 기능 소개 페이지 스타일 — 디자인 토큰
+   출처: front.superschool.link/guides/superschool-features.html
+   (2026-11-13 분석, 페이지 후반부 "홈페이지 톤" 오버라이드까지 반영한 최종값)
+   ========================================================= */
+
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap");
+
+:root {
+  /* ---------- Color: 중립 ---------- */
+  --bg:        #FAFAF8;  /* 페이지 배경 (아주 옅은 웜 화이트) */
+  --surface:   #FFFFFF;  /* 카드·헤더·탭바 */
+  --ink:       #1B1B1B;  /* 본문/제목 텍스트, CTA 배경 */
+  --muted:     #62625E;  /* 보조 텍스트 */
+  --line:      #E8E6E1;  /* 보더, 구분선, 1px 헤어라인 그리드 */
+
+  /* ---------- Color: 브랜드 (오렌지) ---------- */
+  --accent:      #FF600C; /* 버튼, 아바타, 단계 번호, 진행바, 활성 탭 밑줄 */
+  --accent-ink:  #D2470A; /* 오렌지 텍스트 (링크, 아이브로, 활성 탭 글자) */
+  --accent-soft: #FFEFE6; /* 오렌지 틴트 배경 (태그, 키워드, 하이라이트 행) */
+  --hero-tint:   #FFF3EA; /* 히어로 그라디언트 시작색 */
+
+  /* ---------- Color: 상태 ---------- */
+  --mark:      #B7791F;  --mark-soft: #FBF1DC;  /* 메모·코멘트·"예정" 배지 (머스터드) */
+  --ok:        #1E8A5A;  --ok-soft:   #E3F4EB;  /* 개선점·완료·제안 (그린) */
+  --warn:      #B4380B;  --warn-soft: #FDE9DF;  /* 문제점·경고 칩 (번트 오렌지) */
+
+  /* ---------- Color: 단계용 그레이 (stage/phase 2·3단계) ---------- */
+  --gray-strong:      #3A3A38;  --gray-strong-soft: #EFEEEA;
+  --gray-light:       #8D8A83;  --gray-light-soft:  #F3F2EE;
+
+  /* ---------- Typography ---------- */
+  /* 원본은 display/body/mono 세 역할을 모두 Noto Sans KR 하나로 운용 */
+  --f-display: "Noto Sans KR", system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;
+  --f-body:    "Noto Sans KR", system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;
+  --f-mono:    "Noto Sans KR", system-ui, sans-serif; /* 숫자·라벨용 (tabular-nums와 함께) */
+
+  --fs-h1:   clamp(2rem, 5vw, 3.25rem);       /* 32 → 52px */
+  --fs-h2:   clamp(1.5rem, 3.2vw, 2.125rem);  /* 24 → 34px */
+  --fs-h3:   1.125rem;  /* 18 */
+  --fs-h3-lg:1.375rem;  /* 22 (z-row, tri 제목) */
+  --fs-lead: 1.125rem;  /* 18 */
+  --fs-body: 1rem;      /* 16 */
+  --fs-sm:   .9375rem;  /* 15 — 카드 설명 기본 */
+  --fs-xs:   .875rem;   /* 14 */
+  --fs-2xs:  .8125rem;  /* 13 */
+  --fs-3xs:  .75rem;    /* 12 — 칩, 캡션 노트 */
+  --fs-stat: clamp(1.75rem, 4vw, 2.5rem); /* 큰 숫자 */
+
+  --lh-body: 1.75;
+  --lh-head: 1.3;
+
+  --fw-regular: 400; --fw-medium: 500; --fw-semi: 600; --fw-bold: 700; --fw-heavy: 800;
+
+  /* ---------- Layout ---------- */
+  --container: 72rem;   /* 1152px */
+  --gutter: 16px;       /* 좌우 최소 여백 (safe-area와 max()) */
+  --measure-lead: 42rem;
+  --measure-head: 44rem;
+
+  /* ---------- Spacing (원본에서 반복 사용된 값) ---------- */
+  --sp-1: 4px;  --sp-2: 6px;  --sp-3: 8px;  --sp-4: 10px; --sp-5: 12px;
+  --sp-6: 14px; --sp-7: 16px; --sp-8: 18px; --sp-9: 20px; --sp-10: 22px;
+  --sp-12: 28px; --sp-13: 32px; --sp-14: 40px; --sp-15: 48px;
+  --section-y: 64px;       /* 섹션 상하 패딩 */
+  --hero-top: 72px; --hero-bottom: 56px;
+
+  /* ---------- Radius ---------- */
+  --r-xs: 5px;    /* 키워드·작은 배지 */
+  --r-sm: 6px;    /* 체인 토큰, 포커스 링 */
+  --r-md: 10px;   /* 타일, 코멘트, 역할 박스 */
+  --r-lg: 12px;   /* 일반 박스, 스크린샷 프레임 */
+  --r-xl: 14px;   /* 헤어라인 그리드 묶음 */
+  --r-2xl: 16px;  /* 카드, 보드 목업 */
+  --r-pill: 999px;/* 버튼, 태그 */
+
+  /* ---------- Shadow (웜 브라운 기반 · 음수 spread로 바닥에만 깔림) ---------- */
+  --shadow-mock:  0 12px 32px -18px rgba(60, 40, 20, .35); /* UI 목업 카드 */
+  --shadow-shot:  0 14px 34px -22px rgba(60, 40, 20, .45); /* 스크린샷 프레임 */
+  --shadow-stack: 0 14px 34px -18px rgba(60, 40, 20, .50); /* 겹친 이미지 */
+
+  /* ---------- Breakpoints (참고용, CSS 변수는 미디어쿼리에서 못 씀) ----------
+     460  타일 2열 → 1열
+     560  헤더 태그라인 숨김
+     640  통계·비교 그리드 → 1열
+     720  표 형식 row → 1열
+     760  3열 헤어라인 그리드 → 1열
+     820  스크린샷 2열/솔루션/step-row/z-row → 1열
+     860  3단계 stage → 세로
+     900  히어로 2열(sb-grid, ai-grid) → 1열
+  */
+
+  color-scheme: light;
+}
