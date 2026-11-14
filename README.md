@@ -17,6 +17,12 @@ npm run dev        # http://localhost:5173
 ```
 
 ```bash
+# 프론트엔드 (배포완료, 백엔드 연결 X 목 모드로 서버 없이 동작)
+https://ax-edu-front.vercel.app/
+```
+
+
+```bash
 # 백엔드 (PostgreSQL 필요, 자세한 내용은 BACK/AX-EDU_Back/README.md)
 cd BACK/AX-EDU_Back
 cp .env.example .env
