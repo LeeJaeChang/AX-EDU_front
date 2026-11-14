@@ -1,0 +1,15 @@
+.gradle/
+build/
+out/
+.idea/
+*.iml
+.vscode/
+uploads/
+*.log
+
+# 로컬 비밀 값 (DB 계정 등). 예시는 .env.example
+.env
+__pycache__/
+
+# macOS
+.DS_Store

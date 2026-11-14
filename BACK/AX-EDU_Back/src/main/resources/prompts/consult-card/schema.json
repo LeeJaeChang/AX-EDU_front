@@ -1,0 +1,45 @@
+{
+  "type": "object",
+  "description": "교사용 민원 요약 카드 내용",
+  "properties": {
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["LIFE_GUIDANCE", "STUDY_EVALUATION", "PEER_RELATION", "SAFETY", "ETC"] }
+    },
+    "situation": {
+      "type": "array",
+      "description": "있었던 일 (시간 순서, 사실만, 명사형 종결)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "when": { "type": "string" },
+          "where": { "type": "string" },
+          "what": { "type": "string" }
+        },
+        "required": ["when", "where", "what"],
+        "additionalProperties": false
+      }
+    },
+    "concerns": { "type": "array", "items": { "type": "string" } },
+    "requests": { "type": "array", "items": { "type": "string" } },
+    "parentEmotion": {
+      "type": "object",
+      "properties": {
+        "level": { "type": "string", "enum": ["CALM", "CONCERNED", "AGITATED"] },
+        "trend": { "type": "string", "enum": ["RISING", "EASING", "STEADY"] },
+        "signals": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["강한 불만 표현", "반복된 느낌표·물음표", "책임 추궁·외부 신고 언급", "불안·걱정 표현", "아이가 힘들어한다는 표현"]
+          }
+        },
+        "summary": { "type": "string" }
+      },
+      "required": ["level", "trend", "signals", "summary"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["tags", "situation", "concerns", "requests", "parentEmotion"],
+  "additionalProperties": false
+}

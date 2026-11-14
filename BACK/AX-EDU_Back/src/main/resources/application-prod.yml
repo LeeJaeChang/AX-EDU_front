@@ -1,0 +1,8 @@
+# 운영: 접속 정보는 환경 변수(AXEDU_DB_URL 또는 AXEDU_DB_HOST/PORT/NAME, AXEDU_DB_USER, AXEDU_DB_PASSWORD)로 주입.
+# 스키마는 앱 시작 시 Flyway 가 마이그레이션한다. 시드 데이터·/dev/token 은 켜지지 않는다.
+# 운영에서는 API 문서를 기본으로 끈다. 필요하면 AXEDU_SWAGGER_ENABLED=true
+springdoc:
+  api-docs:
+    enabled: ${AXEDU_SWAGGER_ENABLED:false}
+  swagger-ui:
+    enabled: ${AXEDU_SWAGGER_ENABLED:false}

@@ -9,3 +9,14 @@ dist
 .vite
 .claude
 .vercel
+
+# macOS
+.DS_Store
+
+# 백엔드 빌드·실행 산출물 (BACK/AX-EDU_Back/.gitignore 와 동일)
+.gradle/
+build/
+out/
+uploads/
+__pycache__/
+*.log
