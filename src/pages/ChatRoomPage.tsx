@@ -138,7 +138,7 @@ export default function ChatRoomPage() {
                 name={title}
                 imageUrl={room.counterpart?.profileImageUrl}
                 variant={room.type === 'NOTICE' ? 'notice' : 'initial'}
-                size={64}
+                size={40}
               />
               <h1 className="room-head__name">{title}</h1>
               <div className="room-head__actions">

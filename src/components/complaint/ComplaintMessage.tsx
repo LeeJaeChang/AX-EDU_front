@@ -46,11 +46,18 @@ export default function ComplaintMessage({ m, viewerRole, onOpenComplaint }: Pro
       </div>
       {error && <p className="cmsg__error">{error}</p>}
       {!complaint && !error && <p className="cmsg__loading">카드를 불러오는 중…</p>}
-      {complaint?.summaryCard && <SummaryCardView card={complaint.summaryCard} compact />}
-      {viewerRole === 'TEACHER' && complaint && onOpenComplaint && (
-        <button type="button" className="btn btn--sm cmsg__cta" onClick={() => onOpenComplaint(complaint.id)}>
-          {complaint.teacherReply || complaint.status === 'ESCALATED' || complaint.status === 'RESOLVED' ? '민원 처리 현황 보기' : '민원 응대하기'}
-        </button>
+      {complaint?.summaryCard && (
+        <SummaryCardView
+          card={complaint.summaryCard}
+          compact
+          footer={
+            viewerRole === 'TEACHER' && onOpenComplaint ? (
+              <button type="button" className="scard__cta" onClick={() => onOpenComplaint(complaint.id)}>
+                {complaint.teacherReply || complaint.status === 'ESCALATED' || complaint.status === 'RESOLVED' ? '민원 처리 현황 보기' : '민원 응대하기'}
+              </button>
+            ) : undefined
+          }
+        />
       )}
     </div>
   );
