@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { DEMO_ACCOUNTS } from '../api/mock/store';
 import { useMe, useSwitchUser } from '../hooks/useMe';
 
@@ -10,6 +10,7 @@ export default function DemoBar() {
 
   return (
     <div className="demo-bar" role="region" aria-label="데모 설정">
+      <Link to="/" className="demo-bar__home">← 서비스 소개</Link>
       <span className="demo-bar__tag">목 데이터</span>
       <label className="demo-bar__label">
         보는 사람
