@@ -1,11 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { chatApi, USE_MOCK, type UserSummary } from '../api';
+import { chatApi, realtime, USE_MOCK, type UserSummary } from '../api';
+import { setAccessToken } from '../api/client';
+import { demoTokenOf } from '../api/demoTokens';
 import { setCurrentUser } from '../api/mock/store';
 
 interface MeState {
   me: UserSummary | null;
   error: string | null;
-  /** 목 모드 전용: 다른 데모 계정으로 바꿔 본다 */
+  /** 다른 데모 계정으로 바꿔 본다 (목 계정, 또는 실제 서버의 시연 토큰 계정) */
   switchUser: (id: string) => Promise<void>;
 }
 
@@ -30,9 +32,18 @@ export function MeProvider({ children }: { children: ReactNode }) {
 
   const switchUser = useCallback(
     async (id: string) => {
-      if (!USE_MOCK) return;
-      setCurrentUser(id);
+      if (USE_MOCK) {
+        setCurrentUser(id);
+        await load();
+        return;
+      }
+      // 실제 서버: 시연 토큰을 바꿔 끼우고, 이전 계정의 실시간 연결을 끊은 뒤 새 토큰으로 다시 붙는다
+      const token = demoTokenOf(id);
+      if (!token) return;
+      realtime.disconnect();
+      setAccessToken(token);
       await load();
+      realtime.connect();
     },
     [load],
   );

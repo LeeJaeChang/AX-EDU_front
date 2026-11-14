@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { USE_MOCK } from '../api';
+import { SWITCHABLE_ACCOUNTS, USE_MOCK } from '../api';
 import { useSwitchUser } from '../hooks/useMe';
 import '../styles/intro.css';
 
@@ -17,8 +17,8 @@ function useEnter() {
   const navigate = useNavigate();
   const switchUser = useSwitchUser();
   return async (who: Entry) => {
-    // 목 모드: 데모 계정으로 바꿔 들어간다. 실제 서버: 로그인 토큰의 역할을 그대로 쓴다.
-    if (USE_MOCK) await switchUser(ENTRY[who].userId);
+    // 목 모드·시연 토큰: 데모 계정으로 바꿔 들어간다. 시연 토큰이 없는 실제 서버: 로그인 토큰의 역할을 그대로 쓴다.
+    if (SWITCHABLE_ACCOUNTS.some((a) => a.id === ENTRY[who].userId)) await switchUser(ENTRY[who].userId);
     navigate(ENTRY[who].to);
   };
 }

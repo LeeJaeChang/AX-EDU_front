@@ -89,7 +89,13 @@ export class WebSocketClient extends EventBus {
     this.closedByUser = true;
     window.clearTimeout(this.retryTimer);
     window.clearInterval(this.pingTimer);
-    this.ws?.close();
+    if (this.ws) {
+      // 닫히는 중인 소켓이 새 연결 상태를 건드리거나 이전 계정 이벤트를 흘리지 않게 핸들러를 뗀다
+      this.ws.onopen = this.ws.onmessage = this.ws.onclose = null;
+      this.ws.close();
+    }
     this.ws = null;
+    this.retries = 0;
+    this.hasConnectedOnce = false;
   }
 }
