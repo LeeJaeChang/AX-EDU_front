@@ -34,11 +34,16 @@ export default function ComplaintBanner({ complaintId, viewerRole, onOpen }: Pro
   }
 
   const fresh = complaint.status === 'SUBMITTED';
+  const urgent = complaint.summaryCard?.urgency?.level === 'URGENT';
   return (
-    <div className={`banner ${fresh ? 'banner--accent' : ''}`}>
+    <div className={`banner ${fresh ? 'banner--accent' : ''} ${urgent && fresh ? 'banner--urgent' : ''}`}>
       <StatusPill status={complaint.status} viewerRole="TEACHER" />
       <p className="banner__text">
-        {fresh ? `${complaint.parent.name}님의 민원 요약 카드가 도착했어요.` : `${complaint.student.name} 학생 관련 민원을 처리하고 있어요.`}
+        {fresh
+          ? urgent
+            ? `긴급 · ${complaint.parent.name}님이 오늘 안에 확인을 요청한 민원 카드가 도착했어요.`
+            : `${complaint.parent.name}님의 민원 요약 카드가 도착했어요.`
+          : `${complaint.student.name} 학생 관련 민원을 처리하고 있어요.`}
       </p>
       <button type="button" className="btn btn--sm" onClick={() => onOpen(complaint.id)}>
         {fresh ? '카드 확인하기' : '민원 보기'}

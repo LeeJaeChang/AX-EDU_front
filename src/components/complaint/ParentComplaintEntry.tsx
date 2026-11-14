@@ -48,7 +48,7 @@ export default function ParentComplaintEntry() {
         <div className="complaint-entry__text">
           <strong className="complaint-entry__title">마음에 걸리는 일이 있으셨나요?</strong>
           <p className="complaint-entry__sub">
-            AI 상담사가 먼저 이야기를 듣고, 있었던 일을 함께 확인하며 관련 규정과 법령을 찾아 드려요. 누구에게 전하면 좋을지도 같이 정한 뒤, 요약 카드로 선생님께 전해 드려요.
+            똑똑 AI 상담사가 먼저 이야기를 듣고, 있었던 일을 함께 확인하며 관련 규정과 법령을 찾아 드려요. 누구에게 전하면 좋을지도 같이 정한 뒤, 요약 카드로 선생님께 전해 드려요.
           </p>
         </div>
         <Link to="/complaint" className="btn">새 상담 시작</Link>

@@ -239,6 +239,29 @@ export interface SituationItem {
   what: string;
 }
 
+/** 빠른 대응 필요 여부 — 상담에서 학부모에게 확인한다 */
+export type UrgencyLevel = 'URGENT' | 'SOON' | 'NORMAL';
+
+/** 상담 중 학부모의 감정 상태 — AI가 대화를 보고 판단한다 (학부모가 고칠 수 없음) */
+export type EmotionLevel = 'CALM' | 'CONCERNED' | 'AGITATED';
+export type EmotionTrend = 'RISING' | 'EASING' | 'STEADY';
+
+export interface CardUrgency {
+  level: UrgencyLevel;
+  /** 예: '학생 안전·건강 관련', '보호자 요청' */
+  reason: string | null;
+}
+
+export interface ParentEmotion {
+  level: EmotionLevel;
+  /** 상담 처음과 끝을 비교한 흐름 */
+  trend: EmotionTrend;
+  /** 원문을 드러내지 않는 신호 분류. 예: '강한 불만 표현', '책임 추궁·외부 신고 언급' */
+  signals: string[];
+  /** 교사가 첫 연락을 준비할 수 있게 정리한 한두 문장 */
+  summary: string;
+}
+
 export interface SummaryCard {
   version: number;
   basicInfo: { grade: number; classNo: number; receivedAt: string; tags: ComplaintTag[] };
@@ -248,6 +271,10 @@ export interface SummaryCard {
   requests: string[];
   preferredContact: { methods: ContactMethod[]; timeWindow: TimeRange | null };
   regulations: Regulation[];
+  /** 빠른 대응 필요 여부 */
+  urgency: CardUrgency;
+  /** 상담 중 학부모 감정 상태 (regulations·attribution처럼 학부모가 고칠 수 없음) */
+  parentEmotion: ParentEmotion;
   confirmedByParentAt: string | null;
 }
 
@@ -345,6 +372,8 @@ export interface Complaint {
   consultStage?: ConsultStage | null;
   /** 상담에서 정한 받는 선생님 (학부모 본인만) */
   proposedTeacher?: UserSummary | null;
+  /** 첫 화면에서 고른 사전 분류 (학부모 본인만) */
+  category?: ComplaintTag | null;
   summaryCard: SummaryCard | null;
   teacherReply: TeacherReply | null;
   escalation: Escalation | null;
@@ -356,6 +385,8 @@ export interface Complaint {
 export interface CreateComplaintBody {
   /** 채팅 목록에서 시작하면 비운다. 받는 선생님은 제출할 때 고른다. */
   roomId?: string | null;
+  /** 첫 화면의 사전 분류 선택 (고르지 않고 바로 적으면 생략) */
+  category?: ComplaintTag | null;
   studentId: string;
   content: string;
   attachmentIds: string[];

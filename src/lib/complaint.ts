@@ -2,10 +2,13 @@ import type {
   ComplaintStatus,
   ComplaintTag,
   ContactMethod,
+  EmotionLevel,
+  EmotionTrend,
   EscalationReason,
   EscalationStage,
   EscalationStatus,
   SourceType,
+  UrgencyLevel,
 } from '../api';
 
 export const TAG_LABEL: Record<ComplaintTag, string> = {
@@ -15,6 +18,61 @@ export const TAG_LABEL: Record<ComplaintTag, string> = {
   SAFETY: '안전',
   ETC: '기타',
 };
+
+export const URGENCY_LABEL: Record<UrgencyLevel, string> = {
+  URGENT: '긴급 · 오늘 안에 확인',
+  SOON: '며칠 안에 답변',
+  NORMAL: '급하지 않음',
+};
+
+export const EMOTION_LABEL: Record<EmotionLevel, string> = {
+  CALM: '차분함',
+  CONCERNED: '걱정·속상함',
+  AGITATED: '격양됨',
+};
+
+export const EMOTION_TREND_LABEL: Record<EmotionTrend, string> = {
+  EASING: '상담하며 차분해짐',
+  RISING: '상담하며 더 격해짐',
+  STEADY: '처음과 비슷함',
+};
+
+/**
+ * 민원하기 첫 화면의 사전 분류 질문 (자세한 이야기를 듣기 전에 고르는 예시 선택지).
+ * 고르면 상담사가 분류에 맞는 안내로 자세한 이야기를 청한다.
+ */
+export const CATEGORY_OPTIONS: { tag: ComplaintTag; label: string; prompt: string; placeholder: string }[] = [
+  {
+    tag: 'LIFE_GUIDANCE',
+    label: '생활지도 (휴대전화·복장·출결)',
+    prompt: '생활지도에 관한 일이군요. 휴대전화 보관, 복장 지도, 출결 처리처럼 어떤 일이 있었는지 편하게 들려주세요.',
+    placeholder: '예: 수업 중에 아이 휴대전화를 가져가셔서 하루 종일 연락이 안 됐어요.',
+  },
+  {
+    tag: 'STUDY_EVALUATION',
+    label: '수업·평가 (수행평가·성적)',
+    prompt: '수업이나 평가에 관한 일이군요. 어떤 과목의 어떤 평가였는지, 어떤 점이 마음에 걸리셨는지 들려주세요.',
+    placeholder: '예: 영어 수행평가 점수가 낮게 나왔는데 감점 이유를 모르겠어요.',
+  },
+  {
+    tag: 'PEER_RELATION',
+    label: '친구 관계',
+    prompt: '친구 관계로 마음 쓰이시는군요. 아이가 어떤 일을 겪었는지 천천히 들려주세요.',
+    placeholder: '예: 반 친구들이 아이를 계속 놀린다고 해요.',
+  },
+  {
+    tag: 'SAFETY',
+    label: '안전·사고 (다침·위험)',
+    prompt: '아이의 안전에 관한 일이군요. 많이 놀라셨을 것 같아요. 어떤 일이 있었는지 들려주세요.\n지금 당장 위험한 상황이라면 112·119나 학교 교무실로 먼저 연락해 주세요.',
+    placeholder: '예: 체육 시간에 아이가 넘어져 다쳤는데 연락을 못 받았어요.',
+  },
+  {
+    tag: 'ETC',
+    label: '그 밖의 일',
+    prompt: '어떤 일이든 괜찮아요. 있었던 일을 편하게 들려주세요.',
+    placeholder: '있었던 일을 편하게 적어 주세요.',
+  },
+];
 
 export const CONTACT_LABEL: Record<ContactMethod, string> = {
   MESSAGE: '채팅',

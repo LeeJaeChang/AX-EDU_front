@@ -7,16 +7,21 @@ import type {
   AiExplanation,
   ConsultFact,
   ConsultMessage,
+  ComplaintTag,
   ConsultStage,
   ContactMethod,
   QuickReply,
   SummaryCard,
   TimeRange,
+  UrgencyLevel,
   UserSummary,
 } from '../types';
+import { EMOTION_LABEL, URGENCY_LABEL } from '../../lib/complaint';
 import {
+  assessEmotion,
   buildCard,
   CONCERN,
+  detectUrgency,
   hasEmotion,
   parseMethods,
   parseTimeWindow,
@@ -25,23 +30,44 @@ import {
   rulesOf,
   sentencesOf,
   soften,
+  urgencyReason,
 } from './mockAi';
 
 // ---------------- 상태 ----------------
 
-type SlotKey = 'when' | 'place' | 'detail' | 'impact' | 'request';
+type SlotKey = 'urgency' | 'when' | 'place' | 'detail' | 'impact' | 'request';
 
 export interface ConsultState {
   stage: ConsultStage | null;
-  slots: Partial<Record<SlotKey, string>> & { methods?: ContactMethod[]; timeWindow?: TimeRange | null; timeAnswered?: boolean };
+  /** 첫 화면에서 고른 사전 분류 */
+  category: ComplaintTag | null;
+  slots: Partial<Record<SlotKey, string>> & {
+    methods?: ContactMethod[];
+    timeWindow?: TimeRange | null;
+    timeAnswered?: boolean;
+    urgencyReason?: string | null;
+  };
   /** 지금 답을 기다리는 질문 */
   pending: SlotKey | 'method' | 'time' | null;
   teacherId: string | null;
   /** 카드의 '상황'을 만들 원문 (최초 민원, 자세한 이야기, 덧붙인 말) */
   cardTexts: string[];
+  /** 학부모가 직접 쓴 말 전체 (빠른 답 제외) — 감정 상태 판단용 */
+  parentSaid: string[];
+  /** 격한 감정을 한 번 알아주었는지 */
+  emotionAcked: boolean;
 }
 
-export const emptyConsult = (): ConsultState => ({ stage: null, slots: {}, pending: null, teacherId: null, cardTexts: [] });
+export const emptyConsult = (): ConsultState => ({
+  stage: null,
+  category: null,
+  slots: {},
+  pending: null,
+  teacherId: null,
+  cardTexts: [],
+  parentSaid: [],
+  emotionAcked: false,
+});
 
 /** 학부모가 민원을 보낼 수 있는 선생님 (목 데이터: 담임 + 교과) */
 export const RECIPIENTS: { id: string; label: string; subject?: RegExp; subjectName?: string }[] = [
@@ -96,7 +122,18 @@ function extract(text: string, cs: ConsultState) {
 
 // ---------------- 질문 ----------------
 
+const URGENCY_QUICK: QuickReply[] = [
+  { label: '오늘 안에 꼭 확인이 필요해요', value: 'URGENT' },
+  { label: '며칠 안에 답을 받으면 돼요', value: 'SOON' },
+  { label: '급하지 않아요', value: 'NORMAL' },
+];
+
 const QUESTIONS: Record<SlotKey, { content: string; note: string; quick?: QuickReply[] }> = {
+  urgency: {
+    content: '먼저 하나 여쭤볼게요. 이 일은 선생님이 얼마나 빨리 확인해 주시면 좋을까요?',
+    note: "아이의 안전이나 건강이 걸린 일이면 '오늘 안에'를 골라 주세요. 카드에 '긴급'으로 표시해 선생님께 먼저 알려 드려요.",
+    quick: URGENCY_QUICK,
+  },
   when: {
     content: '괜찮으시다면, 그 일이 언제 있었는지 여쭤봐도 될까요?',
     note: '날짜나 교시를 알면 선생님이 당시 기록을 찾아 사실을 확인하기 쉬워요.',
@@ -123,7 +160,10 @@ const QUESTIONS: Record<SlotKey, { content: string; note: string; quick?: QuickR
     quick: [{ label: '사실 확인과 설명' }, { label: '재발 방지 약속' }, { label: '아이에 대한 관심과 지도' }, { label: '일단 상황만 알리고 싶어요' }],
   },
 };
-const ORDER: SlotKey[] = ['when', 'place', 'detail', 'impact', 'request'];
+const ORDER: SlotKey[] = ['urgency', 'when', 'place', 'detail', 'impact', 'request'];
+
+/** 빠른 답 문구 (감정 판단에서 제외) */
+const QUICK_LABELS = new Set(Object.values(QUESTIONS).flatMap((q) => q.quick?.map((x) => x.label) ?? []));
 
 const REQUEST_LABEL: Record<string, string> = {
   '사실 확인과 설명': '사실관계 확인과 설명',
@@ -164,6 +204,7 @@ function factsOf(cs: ConsultState, ctx: Ctx, withContact = false): ConsultFact[]
     .filter(Boolean)
     .join(' ');
   const facts: ConsultFact[] = [
+    { label: '대응 시급도', value: s.urgency ? URGENCY_LABEL[s.urgency as UrgencyLevel] : '확인 필요' },
     { label: '일시', value: s.when ?? '확인 필요' },
     { label: '장소·수업', value: s.place ?? '확인 필요' },
     { label: '있었던 일', value: what.length > 90 ? `${what.slice(0, 90)}…` : what },
@@ -176,13 +217,17 @@ function factsOf(cs: ConsultState, ctx: Ctx, withContact = false): ConsultFact[]
       label: '희망 연락',
       value: [s.methods?.map((m) => METHOD_LABEL[m]).join('·') ?? '채팅 메시지', s.timeWindow ? `${s.timeWindow.from}~${s.timeWindow.to}` : '시간 무관'].join(', '),
     });
+    // 선생님께 함께 전해지는 마음 상태 — 학부모에게도 그대로 보여 준다
+    const emo = assessEmotion(cs.parentSaid);
+    const flow = emo.trend === 'EASING' ? ' (상담하며 차분해지심)' : emo.trend === 'RISING' ? ' (상담하며 더 격해지심)' : '';
+    facts.push({ label: '마음 상태', value: `${EMOTION_LABEL[emo.level]}${flow}` });
   }
   return facts;
 }
 
 /** 걸린 규칙을 모두 모아 규정·법령 설명 하나로 */
-export function mergedExplanation(texts: string[]): AiExplanation {
-  const rules = rulesOf(texts);
+export function mergedExplanation(texts: string[], category?: ComplaintTag | null): AiExplanation {
+  const rules = rulesOf(texts, category);
   return {
     empathy: rules[0].empathy,
     reason: rules.map((r) => r.reason).join(' '),
@@ -201,7 +246,7 @@ const ACTIONS_AFTER_EXPLAIN: QuickReply[] = [
 function explainStage(ctx: Ctx, cs: ConsultState, setExplanation: (e: AiExplanation) => void): ConsultMessage[] {
   cs.stage = 'EXPLAIN';
   cs.pending = null;
-  const explanation = mergedExplanation(cs.cardTexts);
+  const explanation = mergedExplanation(cs.cardTexts, cs.category);
   setExplanation(explanation);
   return [
     ai(ctx, {
@@ -222,7 +267,7 @@ function explainStage(ctx: Ctx, cs: ConsultState, setExplanation: (e: AiExplanat
 function recipientReasoning(cs: ConsultState, ctx: Ctx) {
   const texts = [...cs.cardTexts, cs.slots.place ?? ''];
   const joined = texts.join(' ');
-  const rules = rulesOf(cs.cardTexts);
+  const rules = rulesOf(cs.cardTexts, cs.category);
   const tags = new Set(rules.map((r) => r.tag));
   const subject = RECIPIENTS.find((r) => r.id !== HOMEROOM_ID && r.subject?.test(joined));
   const homeroom = ctx.users[HOMEROOM_ID].name;
@@ -321,21 +366,42 @@ function readyStage(ctx: Ctx, cs: ConsultState, lead?: string): ConsultMessage[]
 // ---------------- 진입점 ----------------
 
 /** 첫 민원에 대한 상담사의 첫 반응: 공감 → 상담 방식 안내 → 첫 질문 */
-export function startConsult(text: string, cs: ConsultState, ctx: Ctx): ConsultMessage[] {
+export function startConsult(text: string, cs: ConsultState, ctx: Ctx, category?: ComplaintTag | null): ConsultMessage[] {
   cs.stage = 'FACTS';
+  cs.category = category ?? null;
   cs.cardTexts = [text];
+  cs.parentSaid = [text];
   extract(text, cs);
   if (sentencesOf(text).length >= 3) cs.slots.detail = 'given';
 
-  const rule = rulesOf([text])[0];
-  const feelings = hasEmotion(text) ? '그런 일을 겪으시면 화가 나고 답답하신 게 당연해요. ' : '';
-  const first = nextEmpty(cs) ?? 'request';
+  const rule = rulesOf([text], cs.category)[0];
+  const agitated = assessEmotion([text]).level === 'AGITATED';
+  cs.emotionAcked = agitated;
+  const feelings = agitated || hasEmotion(text) ? '그런 일을 겪으시면 화가 나고 답답하신 게 당연해요. ' : '';
+  // 빠른 대응 여부는 언제나 가장 먼저 확인한다 (안전·건강 표현이 보이면 그 점을 짚는다)
+  const hint = detectUrgency(text) === 'URGENT';
+  const lead = hint
+    ? '말씀을 들어 보니 서둘러 살펴야 할 일일 수도 있겠어요. 보호자님 이야기를 제대로 이해하고 도와드릴 수 있도록, 몇 가지만 하나씩 여쭤볼게요.'
+    : '보호자님 이야기를 제대로 이해하고 도와드릴 수 있도록, 몇 가지만 하나씩 여쭤볼게요.';
   return [
     ai(ctx, {
       content: `${rule.empathy}\n${feelings}이렇게 먼저 이야기를 꺼내 주셔서 고마워요.`,
     }),
-    ask(ctx, cs, first, '보호자님 이야기를 제대로 이해하고 도와드릴 수 있도록, 몇 가지만 하나씩 여쭤볼게요.'),
+    ask(ctx, cs, nextEmpty(cs) ?? 'request', lead),
   ];
+}
+
+const URGENCY_ACK: Record<UrgencyLevel, string> = {
+  URGENT:
+    "알겠어요. 카드에 '긴급'으로 표시해서 선생님이 가장 먼저 보시도록 할게요.\n혹시 지금 아이가 위험한 상황이라면 기다리지 마시고 112·119나 학교 교무실로 바로 연락해 주세요.",
+  SOON: '네, 며칠 안에 답을 받으실 수 있도록 전해 둘게요.',
+  NORMAL: '네, 차분히 확인해도 되는 일로 전해 둘게요.',
+};
+
+function parseUrgency(text: string, value?: string): UrgencyLevel {
+  if (value === 'URGENT' || value === 'SOON' || value === 'NORMAL') return value;
+  if (/급하지 않|괜찮|천천히|여유/.test(text)) return 'NORMAL';
+  return detectUrgency(text) ?? 'SOON';
 }
 
 /** 학부모의 답 하나에 상담사의 다음 말(들) */
@@ -348,11 +414,30 @@ export function continueConsult(
 ): ConsultMessage[] {
   const s = cs.slots;
 
+  // 직접 쓴 말만 감정 판단에 쓴다. 처음으로 격한 표현이 나오면 그 마음부터 알아준다
+  let feel = '';
+  if (!value && !QUICK_LABELS.has(text)) {
+    cs.parentSaid.push(text);
+    if (!cs.emotionAcked && assessEmotion([text]).level === 'AGITATED') {
+      cs.emotionAcked = true;
+      feel = '많이 화가 나고 답답하신 마음, 충분히 이해해요. 그 마음도 선생님께 함께 전해 드릴게요.';
+    }
+  }
+  const withFeel = (out: ConsultMessage[]) => (feel ? [ai(ctx, { content: feel }), ...out] : out);
+
+  return withFeel(step());
+
+  function step(): ConsultMessage[] {
   switch (cs.stage) {
     case 'FACTS': {
       const key = cs.pending;
       let ack = '';
-      if (key && key !== 'method' && key !== 'time') {
+      if (key === 'urgency') {
+        const level = parseUrgency(text, value);
+        s.urgency = level;
+        s.urgencyReason = level === 'URGENT' ? urgencyReason(cs.parentSaid.join(' ')) ?? '보호자가 빠른 확인 요청' : null;
+        ack = URGENCY_ACK[level];
+      } else if (key && key !== 'method' && key !== 'time') {
         if (value === 'UNKNOWN') {
           s[key] = key === 'detail' ? 'given' : '확인 필요';
           ack = '괜찮아요. 선생님이 확인하실 수 있게 그렇게 적어 둘게요.';
@@ -407,7 +492,7 @@ export function continueConsult(
       s.when = merge(before.when, s.when, /교시/);
       s.place = s.place ?? before.place;
       s.request = before.request && s.request && !before.request.includes(s.request) ? `${before.request} / ${s.request}` : s.request ?? before.request;
-      const explanation = mergedExplanation(cs.cardTexts);
+      const explanation = mergedExplanation(cs.cardTexts, cs.category);
       opts.setExplanation(explanation);
       return [
         ai(ctx, { content: '말씀해 주셔서 고마워요. 정리에 반영했어요.', facts: factsOf(cs, ctx) }),
@@ -460,11 +545,12 @@ export function continueConsult(
       ];
     }
   }
+  }
 }
 
 /** 상담 전체를 한 장의 카드로: 원문 기반 카드에 상담에서 확인한 칸을 덧입힌다 */
 export function cardFromConsult(cs: ConsultState, student: UserSummary, receivedAt: string): Omit<SummaryCard, 'version'> {
-  const base = buildCard(cs.cardTexts, student, receivedAt);
+  const base = buildCard(cs.cardTexts, student, receivedAt, cs.category);
   const s = cs.slots;
   const known = (v?: string) => v && v !== '확인 필요' && v !== 'given';
   // 아이 상태·바라는 점으로 옮긴 문장은 상황에서 뺀다
@@ -490,5 +576,8 @@ export function cardFromConsult(cs: ConsultState, student: UserSummary, received
       methods: s.methods ?? base.preferredContact.methods,
       timeWindow: s.timeAnswered ? s.timeWindow ?? null : base.preferredContact.timeWindow,
     },
+    urgency: { level: (s.urgency as UrgencyLevel | undefined) ?? base.urgency.level, reason: s.urgencyReason ?? base.urgency.reason },
+    // 상담 전체에서 학부모가 직접 쓴 말로 판단 (빠른 답 제외)
+    parentEmotion: assessEmotion(cs.parentSaid),
   };
 }

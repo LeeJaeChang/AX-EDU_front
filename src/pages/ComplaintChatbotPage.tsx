@@ -5,6 +5,7 @@ import {
   complaintApi,
   type Attachment,
   type CardSuggestion,
+  type ComplaintTag,
   type ComplaintRecipient,
   type ConsultMessage,
   type ConsultStage,
@@ -20,6 +21,7 @@ import Composer from '../components/Composer';
 import { ChevronLeftIcon } from '../components/Icons';
 import { useComplaint } from '../hooks/useComplaint';
 import { useMe } from '../hooks/useMe';
+import { CATEGORY_OPTIONS } from '../lib/complaint';
 
 type Busy = 'explaining' | 'retrying' | 'consulting' | 'card' | 'revising' | 'editing' | 'submitting' | 'closing' | null;
 
@@ -62,6 +64,8 @@ export default function ComplaintChatbotPage() {
   const [studentId, setStudentId] = useState(me.childStudentIds?.[0] ?? '');
   const [recipients, setRecipients] = useState<ComplaintRecipient[]>([]);
   const [teacherId, setTeacherId] = useState<string | null>(null);
+  // 사전 분류: 자세한 이야기를 듣기 전에 고르는 예시 선택지 (고르지 않고 바로 적어도 된다)
+  const [pickedCategory, setPickedCategory] = useState<ComplaintTag | null>(null);
   const createKey = useRef(newClientId('cmp_'));
   const submitKey = useRef(newClientId('sub_'));
 
@@ -71,6 +75,8 @@ export default function ComplaintChatbotPage() {
   const status = complaint?.status;
   const stage = complaint?.consultStage ?? null;
   const transcript: ConsultMessage[] = complaint?.consultation ?? [];
+  const category = complaint ? complaint.category ?? null : pickedCategory;
+  const categoryOption = CATEGORY_OPTIONS.find((o) => o.tag === category) ?? null;
 
   // 요약 카드 단계: 받을 선생님 후보 (상담에서 정한 분이 기본)
   useEffect(() => {
@@ -103,7 +109,10 @@ export default function ComplaintChatbotPage() {
     setBusy('explaining');
     setError(null);
     try {
-      const c = await complaintApi.create({ studentId, content, attachmentIds: attachments.map((a) => a.id) }, createKey.current);
+      const c = await complaintApi.create(
+        { studentId, content, category: pickedCategory, attachmentIds: attachments.map((a) => a.id) },
+        createKey.current,
+      );
       setComplaint(c);
       setComplaintId(c.id);
       navigate(`/complaint/${c.id}`, { replace: true });
@@ -197,7 +206,12 @@ export default function ComplaintChatbotPage() {
   const locked = (placeholder: string) => ({ placeholder, disabled: true, attach: false, onSend: async () => {} });
   const composer: { placeholder: string; disabled: boolean; attach: boolean; onSend: (o: Out) => Promise<unknown> } =
     !complaint && !pendingText
-      ? { placeholder: '어떤 일이 있었는지 편하게 적어 주세요. 선생님께 바로 가지 않아요.', disabled: busy !== null, attach: true, onSend: (o) => create(o.content, o.attachments) }
+      ? {
+          placeholder: categoryOption?.placeholder ?? '위에서 골라 주시거나, 어떤 일이 있었는지 바로 적어 주셔도 돼요.',
+          disabled: busy !== null,
+          attach: true,
+          onSend: (o) => create(o.content, o.attachments),
+        }
       : status === 'EXPLAINED' && stage
         ? { placeholder: PLACEHOLDER[stage], disabled: busy !== null, attach: false, onSend: (o) => consult(o.content) }
         : status === 'CARD_DRAFTING'
@@ -251,7 +265,7 @@ export default function ComplaintChatbotPage() {
         <header className="room-head room-head--bot">
           <span className="avatar avatar--ai" style={{ width: 40, height: 40 }} aria-hidden="true">AI</span>
           <div className="room-head__text">
-            <h1 className="room-head__name">AI 민원 상담</h1>
+            <h1 className="room-head__name">똑똑 AI 상담사</h1>
             <p className="room-head__sub">상담 내용은 선생님께 보이지 않아요. 마지막에 확인하고 보낸 요약 카드만 전달돼요.</p>
           </div>
           {status && <StatusPill status={status} viewerRole="PARENT" />}
@@ -271,11 +285,20 @@ export default function ComplaintChatbotPage() {
         <div className="messages-scroll" ref={scroller}>
           <ol className="messages">
             <Bot>
-              <p>안녕하세요, AI 상담사예요. 학교 일로 마음 쓰이는 일이 있으셨군요.</p>
-              <p>어떤 일이 있었는지 편하게 들려주세요. 정리되지 않은 말이어도 괜찮아요.</p>
+              <p>안녕하세요, 똑똑 AI 상담사예요. 학교 일로 마음 쓰이는 일이 있으셨군요.</p>
+              <p>어떤 일인지 아래에서 가까운 것을 골라 주시면, 그에 맞춰 이야기를 들을게요. 바로 적어 주셔도 괜찮아요.</p>
               <p className="bot-sub">
                 먼저 이야기를 충분히 듣고, 있었던 일을 하나씩 여쭤보며 관련 규정과 법령을 찾아 드릴게요. 누구에게 전하면 좋을지도 함께 정한 뒤, 선생님이 보기 쉬운 요약 카드로 정리해 드려요. 이 상담은 선생님께 보이지 않으니 안심하고 말씀하셔도 돼요.
               </p>
+              {!complaint && !pendingText && !pickedCategory && (
+                <div className="quick-replies" role="group" aria-label="어떤 일인지 고르기">
+                  {CATEGORY_OPTIONS.map((o) => (
+                    <button key={o.tag} type="button" className="quick-reply" onClick={() => setPickedCategory(o.tag)}>
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              )}
               {!complaint && (me.childStudentIds?.length ?? 0) > 1 && (
                 <div className="chips" role="group" aria-label="자녀 선택">
                   {me.childStudentIds!.map((id, i) => (
@@ -286,6 +309,22 @@ export default function ComplaintChatbotPage() {
                 </div>
               )}
             </Bot>
+
+            {categoryOption && (
+              <>
+                <Mine>{categoryOption.label}</Mine>
+                <Bot continued={false}>
+                  {categoryOption.prompt.split('\n').map((line, i) => (
+                    <p key={i} className={i > 0 ? 'bot-sub' : undefined}>{line}</p>
+                  ))}
+                  {!complaint && !pendingText && (
+                    <div className="bot-actions">
+                      <button type="button" className="link-btn" onClick={() => setPickedCategory(null)}>다른 걸 고를게요</button>
+                    </div>
+                  )}
+                </Bot>
+              </>
+            )}
 
             {/* 상담 기록이 없는 예전 민원은 원문만 보여 준다 */}
             {!complaint && pendingText && <Mine>{pendingText}</Mine>}
@@ -315,7 +354,7 @@ export default function ComplaintChatbotPage() {
             {pendingReply && (
               <>
                 <Mine>{pendingReply}</Mine>
-                <Typing text="상담사가 답을 적고 있어요" />
+                <Typing text="똑똑 AI 상담사가 답을 적고 있어요" />
               </>
             )}
 
@@ -505,7 +544,7 @@ function Bot({ children, tone, wide, continued }: { children: ReactNode; tone?: 
     <li className={`msg msg--theirs ${continued ? 'msg--cont' : ''}`}>
       <BotAvatar hidden={continued} />
       <div className={`msg__col ${wide ? 'msg__col--wide' : ''}`}>
-        {!continued && <span className="msg__sender">AI 상담사</span>}
+        {!continued && <span className="msg__sender">똑똑 AI 상담사</span>}
         <div className={`bubble bubble--theirs bubble--bot ${tone === 'warn' ? 'bubble--warn' : ''}`}>{children}</div>
       </div>
     </li>
