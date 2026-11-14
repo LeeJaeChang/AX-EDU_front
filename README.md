@@ -27,4 +27,4 @@ cp .env.example .env
 
 ## 배포
 
-- 프론트(Vercel): 프로젝트 **Root Directory** 를 `FRONT` 로 지정합니다.
+- 프론트(Vercel): 루트의 [`vercel.json`](vercel.json)이 `FRONT/` 를 빌드해 `FRONT/dist` 를 배포합니다. Vercel 설정은 바꿀 필요 없습니다.

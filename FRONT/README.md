@@ -49,7 +49,7 @@ VITE_API_HOST=https://{superschool-host}
 
 GitHub 저장소를 Vercel 프로젝트로 가져오면 [`vercel.json`](vercel.json) 설정대로 빌드합니다(Vite, `npm run build`, 출력 `dist`).
 
-- **Root Directory**: 저장소에 프론트(`FRONT/`)와 백엔드(`BACK/`)가 함께 있으므로 Vercel **Settings → Build and Deployment → Root Directory** 를 `FRONT` 로 지정합니다.
+- **저장소 루트에서 배포**: 저장소에 프론트(`FRONT/`)와 백엔드(`BACK/`)가 함께 있어, 루트의 [`vercel.json`](../vercel.json)이 `FRONT/` 안에서 설치·빌드하고 `FRONT/dist`를 내보냅니다. Vercel Root Directory 는 비워 둡니다(루트). Root Directory 를 `FRONT` 로 바꾸면 이 폴더의 `vercel.json`이 대신 쓰입니다.
 
 - **새로고침 404 방지**: 화면 주소(`/chat`, `/complaint/…`)는 브라우저 라우팅이라 실제 파일이 없습니다. `vercel.json`의 `rewrites`가 실제 파일이 없는 모든 경로를 `index.html`로 돌려줍니다(`/assets/*` 같은 빌드 파일은 그대로 제공).
 - **환경 변수**: 목 데이터 시연이면 입력하지 않습니다(값이 없으면 목 모드). 실제 서버에 붙일 때만 Vercel **Settings → Environment Variables**에 `VITE_USE_MOCK=false`, `VITE_API_HOST`를 넣고 **다시 배포**합니다(빌드 때 코드에 들어가는 값). `.env` 파일은 올리지 않습니다.
