@@ -1,4 +1,5 @@
 import { buildCard, explain } from './mockAi';
+import { emptyConsult } from './mockConsult';
 import { addRoom, complaints, messages, users, type ComplaintRow } from './store';
 import type { Message, UserSummary } from '../types';
 
@@ -67,6 +68,8 @@ export function seed() {
     status: 'SUBMITTED',
     originalText: original,
     explanation: explain(original),
+    consultation: [],
+    consult: emptyConsult(),
     cards: [{ ...card, source: 'AI_GENERATED' }],
     submittedVersion: 1,
     reply: null,

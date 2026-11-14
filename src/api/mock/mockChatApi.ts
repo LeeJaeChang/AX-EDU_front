@@ -9,6 +9,7 @@ import {
   delay,
   effectiveHours,
   emit,
+  findDirect,
   genId,
   me,
   messages,
@@ -42,8 +43,6 @@ function contactsOf(): string[] {
   return ['usr_t1'];
 }
 
-const findDirect = (a: string, b: string) =>
-  [...rooms.values()].find((r) => r.type === 'DIRECT' && r.members.includes(a) && r.members.includes(b));
 
 /** 데모: 교사가 학생에게 보내면 학생이 잠시 뒤 답한다(실시간 수신 확인용) */
 function scheduleStudentReply(row: RoomRow) {

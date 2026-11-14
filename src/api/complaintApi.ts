@@ -2,6 +2,7 @@ import { request } from './client';
 import type {
   CardEditableFields,
   Complaint,
+  ComplaintRecipient,
   CreateComplaintBody,
   Escalation,
   EscalationBody,
@@ -21,6 +22,10 @@ export interface ComplaintApi {
   create(body: CreateComplaintBody, idempotencyKey: string): Promise<Complaint>;
   /** AI 설명 실패(422) 후 재시도 */
   retryExplanation(id: string): Promise<Complaint>;
+  /** 상담 이어 가기 — 학부모의 답(자유 입력 또는 빠른 답 value)에 상담사가 다음 질문·설명을 돌려준다 (EXPLAINED 유지) */
+  consult(id: string, content: string, value?: string): Promise<Complaint>;
+  /** 받을 수 있는 선생님 목록 + AI 추천 */
+  listRecipients(id: string): Promise<ComplaintRecipient[]>;
   /** 설명으로 이해, 종료 */
   close(id: string): Promise<Complaint>;
   /** STEP 2 '선생님과 대화하기' → 요약 카드 생성 */
@@ -29,8 +34,8 @@ export interface ComplaintApi {
   requestRevision(id: string, baseVersion: number, instruction: string): Promise<SummaryCardResult>;
   /** 카드 항목 직접 수정 */
   editSummaryCard(id: string, baseVersion: number, fields: CardEditableFields): Promise<SummaryCardResult>;
-  /** '확인하고 보내기' */
-  submit(id: string, cardVersion: number, idempotencyKey: string): Promise<Complaint>;
+  /** '확인하고 보내기' — 고른 선생님과의 DIRECT 방(없으면 새로 만든다)에 카드를 올린다 */
+  submit(id: string, cardVersion: number, teacherId: string, idempotencyKey: string): Promise<Complaint>;
   list(q?: ListComplaintsQuery): Promise<Page<Complaint>>;
   get(id: string): Promise<Complaint>;
   /** 교사가 카드 열람 SUBMITTED → TEACHER_REVIEWING */
@@ -58,6 +63,12 @@ export const httpComplaintApi: ComplaintApi = {
   async retryExplanation(id) {
     return (await request<Complaint>(`/complaints/${id}/explanation/retry`, { method: 'POST' })).data;
   },
+  async consult(id, content, value) {
+    return (await request<Complaint>(`/complaints/${id}/consultations`, { method: 'POST', body: { content, value } })).data;
+  },
+  async listRecipients(id) {
+    return (await request<ComplaintRecipient[]>(`/complaints/${id}/recipients`)).data;
+  },
   async close(id) {
     return (await request<Complaint>(`/complaints/${id}/close`, { method: 'POST' })).data;
   },
@@ -81,11 +92,11 @@ export const httpComplaintApi: ComplaintApi = {
       })
     ).data;
   },
-  async submit(id, cardVersion, idempotencyKey) {
+  async submit(id, cardVersion, teacherId, idempotencyKey) {
     return (
       await request<Complaint>(`/complaints/${id}/submit`, {
         method: 'POST',
-        body: { cardVersion },
+        body: { cardVersion, teacherId },
         headers: { 'Idempotency-Key': idempotencyKey },
       })
     ).data;

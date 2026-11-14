@@ -1,11 +1,13 @@
 // 목 서버의 메모리 DB. 여러 사용자(교사·학부모)를 오가며 같은 데이터를 본다.
 import { toMs } from '../../lib/format';
 import { EventBus } from '../../realtime/socket';
+import type { ConsultState } from './mockConsult';
 import type {
   AiExplanation,
   ChatRoom,
   ChatSetting,
   ComplaintStatus,
+  ConsultMessage,
   ContactMethod,
   Escalation,
   Message,
@@ -127,6 +129,20 @@ export function getRoomRow(roomId: string) {
   return rooms.get(roomId);
 }
 
+export const findDirect = (a: string, b: string) =>
+  [...rooms.values()].find((r) => r.type === 'DIRECT' && r.members.includes(a) && r.members.includes(b));
+
+/** 두 사람의 DIRECT 방. 없으면 만들고 room.created를 보낸다. */
+export function ensureDirect(a: string, b: string) {
+  const found = findDirect(a, b);
+  if (found) return found;
+  const id = genId('room_');
+  addRoom({ id, type: 'DIRECT', members: [a, b], createdAt: nowIso(), availableHoursOverride: null });
+  const row = rooms.get(id)!;
+  emit({ event: 'room.created', data: toRoomView(row, users[b]) });
+  return row;
+}
+
 export const teacherOf = (row: RoomRow) => row.members.map((id) => users[id]).find((m) => m.role === 'TEACHER') ?? null;
 
 export function effectiveHours(row: RoomRow): TimeRange | null {
@@ -229,13 +245,17 @@ export interface CardRow extends SummaryCard {
 
 export interface ComplaintRow {
   id: string;
-  roomId: string;
+  /** 채팅 목록에서 시작한 민원은 제출할 때 방·교사가 정해진다 */
+  roomId: string | null;
   parentId: string;
-  teacherId: string;
+  teacherId: string | null;
   studentId: string;
   status: ComplaintStatus;
   originalText: string;
   explanation: AiExplanation | null;
+  /** AI 상담 대화와 상담 진행 상태 (학부모 본인만 본다) */
+  consultation: ConsultMessage[];
+  consult: ConsultState;
   cards: CardRow[];
   submittedVersion: number | null;
   reply: { content: string; contactMethod: ContactMethod; scheduledAt: string | null; sentAt: string } | null;

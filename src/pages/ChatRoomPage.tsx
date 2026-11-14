@@ -126,7 +126,7 @@ export default function ChatRoomPage() {
       <nav className="topbar">
         <Link to="/chat" className="back-link">
           <ChevronLeftIcon width={18} height={18} />
-          목록으로
+          {me.role === 'PARENT' ? '민원하기로' : '목록으로'}
         </Link>
       </nav>
 
@@ -142,11 +142,6 @@ export default function ChatRoomPage() {
               />
               <h1 className="room-head__name">{title}</h1>
               <div className="room-head__actions">
-                {room.canFileComplaint && !room.activeComplaintId && (
-                  <button type="button" className="btn btn--sm" onClick={() => navigate(`/chat/${roomId}/complaint`)}>
-                    민원하기
-                  </button>
-                )}
                 <button type="button" className="btn btn--soft btn--sm" onClick={() => setSettingsOpen(true)}>설정</button>
                 <button type="button" className="btn btn--soft btn--sm" onClick={() => setLeaveOpen(true)}>나가기</button>
               </div>
@@ -157,7 +152,7 @@ export default function ChatRoomPage() {
         </header>
 
         {room?.activeComplaintId && (
-          <ComplaintBanner roomId={roomId} complaintId={room.activeComplaintId} viewerRole={me.role} onOpen={setDrawerId} />
+          <ComplaintBanner complaintId={room.activeComplaintId} viewerRole={me.role} onOpen={setDrawerId} />
         )}
 
         <div className="messages-scroll" ref={scroller} onScroll={onScroll}>

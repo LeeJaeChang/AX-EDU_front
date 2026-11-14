@@ -13,7 +13,7 @@ export default function ExplanationView({ explanation }: { explanation: AiExplan
       </div>
       {explanation.citations.length > 0 ? (
         <div className="explain__cite">
-          <span className="explain__label">근거 자료</span>
+          <span className="explain__label">관련 규정·법령</span>
           <RegulationList items={explanation.citations} />
         </div>
       ) : (

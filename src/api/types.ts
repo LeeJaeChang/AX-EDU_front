@@ -280,16 +280,71 @@ export interface Escalation {
   requestedAt: string;
 }
 
+/**
+ * AI 상담 단계. 한 번에 끝내지 않고 여러 대화로 정해 간다.
+ * FACTS 사실관계 묻기 → EXPLAIN 규정·법령 설명 → RECIPIENT 연락할 선생님 정하기
+ * → CONTACT 연락 방법·시간 → READY 요약 카드 만들 준비 완료
+ */
+export type ConsultStage = 'FACTS' | 'EXPLAIN' | 'RECIPIENT' | 'CONTACT' | 'READY';
+
+/** 상담사가 제안하는 빠른 답. value가 있으면 그 값으로 처리한다 (예: 선생님 ID, 'MAKE_CARD') */
+export interface QuickReply {
+  label: string;
+  value?: string;
+}
+
+export interface ConsultFact {
+  label: string;
+  value: string;
+}
+
+/** AI 상담 대화 한 줄 (학부모에게만 보임, 교사에게는 내려가지 않는다) */
+export interface ConsultMessage {
+  id: string;
+  from: 'PARENT' | 'AI';
+  /** 본문. 줄바꿈으로 문단을 나눈다 */
+  content: string;
+  /** 왜 묻는지 등 보조 설명 */
+  note?: string;
+  /** 사실관계 정리표 */
+  facts?: ConsultFact[];
+  /** 규정·법령 설명 */
+  explanation?: AiExplanation;
+  /** 연락할 선생님을 고른 이유 */
+  reasoning?: string[];
+  quickReplies?: QuickReply[];
+  /** 학부모가 빠른 답을 눌렀을 때의 값 */
+  value?: string;
+  createdAt: string;
+}
+
+/** 민원을 받을 수 있는 선생님. AI가 상담 내용을 보고 한 분을 추천한다. */
+export interface ComplaintRecipient {
+  teacher: UserSummary;
+  /** 예: '3학년 9반 담임', '영어' */
+  label: string;
+  recommended: boolean;
+  reason?: string;
+}
+
 export interface Complaint {
   id: string;
   status: ComplaintStatus;
   parent: UserSummary;
-  teacher: UserSummary;
+  /** 학부모가 '확인하고 보내기'에서 받는 선생님을 고르기 전에는 null */
+  teacher: UserSummary | null;
   student: UserSummary;
-  roomId: string;
+  /** 제출 시 학부모–교사 DIRECT 방에 연결된다. 제출 전에는 null */
+  roomId: string | null;
   /** 학부모 본인과 민원대응팀 이상만 받는다. 교사 응답에서는 빠진다. */
   originalText?: string;
   aiExplanation?: AiExplanation | null;
+  /** AI 상담 대화 전체 (학부모 본인만) */
+  consultation?: ConsultMessage[];
+  /** 지금 상담 단계 (학부모 본인만, 카드 단계 이후는 null) */
+  consultStage?: ConsultStage | null;
+  /** 상담에서 정한 받는 선생님 (학부모 본인만) */
+  proposedTeacher?: UserSummary | null;
   summaryCard: SummaryCard | null;
   teacherReply: TeacherReply | null;
   escalation: Escalation | null;
@@ -299,7 +354,8 @@ export interface Complaint {
 }
 
 export interface CreateComplaintBody {
-  roomId: string;
+  /** 채팅 목록에서 시작하면 비운다. 받는 선생님은 제출할 때 고른다. */
+  roomId?: string | null;
   studentId: string;
   content: string;
   attachmentIds: string[];

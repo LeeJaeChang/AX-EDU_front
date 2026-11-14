@@ -61,7 +61,7 @@ export const TEACHER_STATUS: Partial<Record<ComplaintStatus, { label: string; to
 
 /** 학부모가 보는 상태. 이관 여부는 미결 사항이라 학부모에게는 드러내지 않는다. */
 export const PARENT_STATUS: Record<ComplaintStatus, { label: string; tone: Tone }> = {
-  EXPLAINED: { label: 'AI 설명 확인 중', tone: 'mark' },
+  EXPLAINED: { label: 'AI와 상담 중', tone: 'mark' },
   CLOSED_BY_EXPLANATION: { label: '설명으로 종료', tone: 'neutral' },
   CARD_DRAFTING: { label: '요약 카드 작성 중', tone: 'mark' },
   SUBMITTED: { label: '선생님께 전달됨', tone: 'accent' },
