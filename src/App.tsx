@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { realtime, USE_MOCK } from './api';
+import { realtime, SWITCHABLE_ACCOUNTS } from './api';
 import DemoBar from './components/DemoBar';
 import { MeProvider, useMe } from './hooks/useMe';
 import ChatListPage from './pages/ChatListPage';
@@ -27,7 +27,7 @@ function Shell() {
   const isIntro = pathname === '/';
   return (
     <div className="app">
-      {USE_MOCK && !isIntro && <DemoBar />}
+      {SWITCHABLE_ACCOUNTS.length > 0 && !isIntro && <DemoBar />}
       {/* 계정을 바꾸면 화면 상태를 새로 시작한다 */}
       <div className="app-main" key={me.id}>
         <Routes>
