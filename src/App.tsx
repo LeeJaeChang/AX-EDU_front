@@ -35,9 +35,11 @@ function Shell() {
           <Route path="/" element={<IntroPage />} />
           <Route path="/chat" element={<ChatListPage />} />
           <Route path="/chat/:roomId" element={<ChatRoomPage />} />
-          {/* 학부모 전용 AI 챗봇 영역 (민원하기) */}
-          <Route path="/chat/:roomId/complaint" element={<ParentOnly><ComplaintChatbotPage /></ParentOnly>} />
-          <Route path="/chat/:roomId/complaint/:complaintId" element={<ParentOnly><ComplaintChatbotPage /></ParentOnly>} />
+          {/* 학부모 전용 AI 민원 상담 (채팅 목록의 '민원하기') */}
+          <Route path="/complaint" element={<ParentOnly><ComplaintChatbotPage /></ParentOnly>} />
+          <Route path="/complaint/:complaintId" element={<ParentOnly><ComplaintChatbotPage /></ParentOnly>} />
+          {/* 예전 주소(방 안에서 시작하던 흐름)는 새 상담 화면으로 */}
+          <Route path="/chat/:roomId/complaint/*" element={<Navigate to="/complaint" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

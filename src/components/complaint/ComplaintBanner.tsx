@@ -5,14 +5,13 @@ import { isDrafting } from '../../lib/complaint';
 import StatusPill from './StatusPill';
 
 interface Props {
-  roomId: string;
   complaintId: string;
   viewerRole: Role;
   onOpen: (id: string) => void;
 }
 
 /** 채팅방 상단: 진행 중인 민원 안내 */
-export default function ComplaintBanner({ roomId, complaintId, viewerRole, onOpen }: Props) {
+export default function ComplaintBanner({ complaintId, viewerRole, onOpen }: Props) {
   const { complaint } = useComplaint(complaintId);
   if (!complaint) return null;
 
@@ -22,7 +21,7 @@ export default function ComplaintBanner({ roomId, complaintId, viewerRole, onOpe
         <div className="banner">
           <StatusPill status={complaint.status} viewerRole="PARENT" />
           <p className="banner__text">아직 선생님께 보내지 않은 민원이 있어요.</p>
-          <Link className="btn btn--sm" to={`/chat/${roomId}/complaint/${complaint.id}`}>이어서 쓰기</Link>
+          <Link className="btn btn--sm" to={`/complaint/${complaint.id}`}>이어서 쓰기</Link>
         </div>
       );
     }

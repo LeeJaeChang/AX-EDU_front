@@ -51,6 +51,13 @@ export const REGULATIONS: Regulation[] = [
     documentUrl: '#reg_n87',
   },
   {
+    id: 'reg_law_guidance',
+    sourceType: 'LAW',
+    title: '초·중등교육법 시행령 제40조의3(학생생활지도)',
+    excerpt: '학교의 장과 교원은 학칙에 따라 교육활동 중 학생의 휴대전화 사용 등을 제한하는 방식으로 학생생활지도를 할 수 있다. (목 데이터 요약)',
+    documentUrl: '#reg_law_guidance',
+  },
+  {
     id: 'reg_law_safety',
     sourceType: 'LAW',
     title: '학교안전사고 예방 및 보상에 관한 법률',
@@ -59,9 +66,9 @@ export const REGULATIONS: Regulation[] = [
   },
 ];
 
-const reg = (id: string) => REGULATIONS.find((r) => r.id === id)!;
+export const reg = (id: string) => REGULATIONS.find((r) => r.id === id)!;
 
-interface Rule {
+export interface Rule {
   match: RegExp;
   tag: ComplaintTag;
   regulations: string[];
@@ -78,10 +85,10 @@ const RULES: Rule[] = [
   {
     match: /휴대폰|핸드폰|휴대전화|스마트폰/,
     tag: 'LIFE_GUIDANCE',
-    regulations: ['reg_12'],
+    regulations: ['reg_12', 'reg_law_guidance'],
     recommendation: 'EXPLAINED',
-    empathy: '아이와 연락이 닿지 않아 많이 걱정되셨겠어요.',
-    reason: '학교 학생생활규정에 따라 수업 시간 중 휴대전화는 담임선생님이 보관하고 종례 때 돌려줍니다.',
+    empathy: '아이와 하루 종일 연락이 닿지 않아 많이 걱정되고 답답하셨겠어요.',
+    reason: '학교 학생생활규정을 찾아보니, 수업 시간 중 휴대전화는 담임선생님이 보관했다가 종례 때 돌려주도록 되어 있어요. 초·중등교육법 시행령에서도 교원이 학칙에 따라 휴대전화 사용을 제한할 수 있게 하고 있어요.',
     alternative: '급한 연락은 교무실 대표번호로 해 주시면 학생에게 바로 전달해 드려요.',
     situation: [{ when: '수업 시간 중', where: '교실', what: '학생의 휴대전화를 보관함' }],
     concerns: ['급한 상황에 학생과 연락할 방법이 없음'],
@@ -92,7 +99,7 @@ const RULES: Rule[] = [
     tag: 'STUDY_EVALUATION',
     regulations: ['reg_15'],
     recommendation: 'TALK_TO_TEACHER',
-    empathy: '아이가 열심히 준비한 만큼 결과가 아쉬우셨을 것 같아요.',
+    empathy: '아이가 열심히 준비한 만큼, 결과를 보시고 속상하고 납득하기 어려우셨을 것 같아요.',
     reason: '학업성적관리규정에 따라 수행평가 채점 기준은 학기 초에 공개되고, 결과를 확인한 뒤 7일 안에 이의를 신청할 수 있어요. 구체적인 채점 내용은 담당 선생님이 확인해 주셔야 해요.',
     alternative: '채점 기준표는 학교 홈페이지 공지에서 볼 수 있어요.',
     situation: [{ when: '최근', where: '—', what: '수행평가 결과를 받음' }],
@@ -104,7 +111,7 @@ const RULES: Rule[] = [
     tag: 'LIFE_GUIDANCE',
     regulations: ['reg_n87'],
     recommendation: 'EXPLAINED',
-    empathy: '갑자기 연락을 받으셔서 놀라셨겠어요.',
+    empathy: '갑자기 학교에서 연락을 받으셔서 많이 놀라셨겠어요.',
     reason: '야간 자율학습 운영 안내에 따라, 미리 알리지 않고 빠지면 보호자께 문자로 안내드리고 있어요.',
     alternative: '빠져야 하는 날은 전날까지 담임선생님께 채팅으로 알려 주시면 돼요.',
     situation: [{ when: '야간 자율학습 시간', where: '학교', what: '학생의 불참이 확인됨' }],
@@ -116,7 +123,7 @@ const RULES: Rule[] = [
     tag: 'LIFE_GUIDANCE',
     regulations: ['reg_9'],
     recommendation: 'EXPLAINED',
-    empathy: '아이 건강 때문에 신경 쓰실 일이 많으셨겠어요.',
+    empathy: '아이 건강을 챙기시느라 신경 쓰실 일이 많으셨을 텐데, 서류 일까지 겹쳐 번거로우셨겠어요.',
     reason: '학업성적관리규정에 따라 결석 후 5일 안에 진료확인서 같은 증빙 서류를 담임선생님께 내면 처리돼요.',
     alternative: '서류는 이 채팅에 사진으로 올려 주셔도 돼요.',
     situation: [{ when: '최근', where: '—', what: '학생이 결석함' }],
@@ -128,7 +135,7 @@ const RULES: Rule[] = [
     tag: 'LIFE_GUIDANCE',
     regulations: ['reg_8'],
     recommendation: 'EXPLAINED',
-    empathy: '아이가 지적을 받아 속상해했을 것 같아요.',
+    empathy: '아이가 지적을 받고 속상해하는 모습을 보셔서 마음이 편치 않으셨겠어요.',
     reason: '학생생활규정에 따라 교복을 단정히 입고, 체육 시간에는 체육복을 입도록 하고 있어요.',
     alternative: '계절별 착용 기준은 가정통신문으로 다시 안내드릴 수 있어요.',
     situation: [{ when: '등교 시간', where: '교문', what: '복장 지도를 받음' }],
@@ -140,7 +147,7 @@ const RULES: Rule[] = [
     tag: 'SAFETY',
     regulations: ['reg_law_safety'],
     recommendation: 'TALK_TO_TEACHER',
-    empathy: '아이가 다쳤다는 소식에 많이 놀라셨겠어요.',
+    empathy: '아이가 다쳤다는 이야기를 들으셨을 때 얼마나 놀라고 마음 아프셨을지요.',
     reason: '교육활동 중 일어난 사고는 학교안전공제회에 보상을 청구할 수 있어요. 어떻게 다쳤는지는 선생님이 직접 확인해야 해요.',
     alternative: '병원 진료 기록은 꼭 보관해 주세요.',
     situation: [{ when: '교육활동 중', where: '—', what: '학생이 다침' }],
@@ -152,7 +159,7 @@ const RULES: Rule[] = [
     tag: 'PEER_RELATION',
     regulations: [],
     recommendation: 'TALK_TO_TEACHER',
-    empathy: '아이가 힘들어하는 모습을 보며 마음이 많이 아프셨겠어요.',
+    empathy: '아이가 힘들어하는 모습을 곁에서 지켜보시는 게 얼마나 마음 아프셨을지 짐작이 돼요.',
     reason: '친구 관계 문제는 학교 규정만으로 설명드리기 어려워요. 담임선생님이 상황을 직접 확인하시는 게 필요해요.',
     alternative: '아이가 말한 내용을 날짜별로 적어 두시면 선생님이 확인하는 데 도움이 돼요.',
     situation: [{ when: '최근', where: '학교', what: '친구 관계에서 어려움을 겪음' }],
@@ -166,7 +173,7 @@ const FALLBACK: Rule = {
   tag: 'ETC',
   regulations: [],
   recommendation: 'TALK_TO_TEACHER',
-  empathy: '말씀해 주셔서 고맙습니다. 많이 신경 쓰이셨겠어요.',
+  empathy: '이야기를 꺼내 주셔서 고마워요. 그동안 마음이 많이 쓰이셨겠어요.',
   reason: '말씀하신 내용과 바로 맞는 학교 규정을 찾지 못했어요. 선생님이 직접 확인하고 답해 주시는 게 정확해요.',
   alternative: '요약 카드를 만들어 선생님께 정리해서 전달해 드릴 수 있어요.',
   situation: [{ when: '최근', where: '—', what: '학부모님이 확인을 요청하신 일이 있음' }],
@@ -209,19 +216,19 @@ export function explain(text: string): AiExplanation {
 
 const WHEN = /(오늘|어제|그저께|그제|지난주|이번 주|\d{1,2}월 ?\d{1,2}일|\d교시|수업 ?중|점심시간|쉬는 ?시간|아침|종례|조회|방과 ?후|하교|등교)/;
 const WHERE = /(교실|운동장|급식실|체육관|복도|화장실|도서관|과학실|음악실|교무실|교문|학원)/;
-const REQUEST = /(주세요|주시면|주셨으면|바랍니다|원합니다|부탁|요청)/;
+export const REQUEST = /(주세요|주시면|주셨으면|바랍니다|원합니다|부탁|요청)/;
 /** 연락 방법·시간 문장은 '희망 연락'으로 옮기고 상황·요청에서는 뺀다 */
 const CONTACT_PREF = /(연락은|연락 ?주|전화로|통화로|문자로|방문해서|면담으로)/;
-const CONCERN = /(걱정|불안|힘들어|속상|무서워|울었|잠을 못)/;
+export const CONCERN = /(걱정|불안|힘들어|속상|무서워|울었|잠을 못)/;
 
-function sentencesOf(text: string) {
+export function sentencesOf(text: string) {
   return text
     .split(/(?<=[.!?…])\s+|\n+/)
     .map((s) => s.trim())
     .filter((s) => s.length > 1);
 }
 
-function parseTimeWindow(text: string): TimeRange | null {
+export function parseTimeWindow(text: string): TimeRange | null {
   const m = text.match(/(오전|오후)?\s*(\d{1,2})(?::(\d{2}))?\s*시?\s*(?:~|-|부터|에서)\s*(오전|오후)?\s*(\d{1,2})(?::(\d{2}))?\s*시?/);
   if (!m) return null;
   const to24 = (ampm: string | undefined, h: string, fallbackPm: boolean) => {
@@ -237,7 +244,7 @@ function parseTimeWindow(text: string): TimeRange | null {
   return { from: `${pad(fromH)}:${m[3] ?? '00'}`, to: `${pad(toH)}:${m[6] ?? '00'}` };
 }
 
-function parseMethods(text: string): ContactMethod[] | null {
+export function parseMethods(text: string): ContactMethod[] | null {
   const out: ContactMethod[] = [];
   if (/전화|통화/.test(text)) out.push('CALL');
   if (/방문|찾아뵙|면담|직접 만나/.test(text)) out.push('VISIT');
@@ -245,9 +252,25 @@ function parseMethods(text: string): ContactMethod[] | null {
   return out.length ? out : null;
 }
 
-export function buildCard(text: string, student: UserSummary, receivedAt: string): Omit<SummaryCard, 'version'> {
-  const rule = ruleOf(text);
-  const sentences = sentencesOf(text);
+/** 여러 턴에 걸쳐 말한 내용에서 걸린 규칙들 (없으면 FALLBACK 하나) */
+export function rulesOf(texts: string[]) {
+  const found: Rule[] = [];
+  for (const t of texts) {
+    const r = RULES.find((x) => x.match.test(t));
+    if (r && !found.includes(r)) found.push(r);
+  }
+  return found.length ? found : [FALLBACK];
+}
+
+/**
+ * 상담 전체(최초 민원 + 이어서 말한 내용)를 한 장의 카드로 정리한다.
+ * 상황은 턴 순서대로, 태그·근거 규정은 걸린 규칙을 모두 모은다.
+ */
+export function buildCard(input: string | string[], student: UserSummary, receivedAt: string): Omit<SummaryCard, 'version'> {
+  const texts = Array.isArray(input) ? input : [input];
+  const text = texts.join('\n');
+  const rules = rulesOf(texts);
+  const sentences = texts.flatMap(sentencesOf);
   const n = student.studentNumber ?? '00000';
 
   const situation: SituationItem[] = [];
@@ -269,18 +292,21 @@ export function buildCard(text: string, student: UserSummary, receivedAt: string
       });
   }
 
-  if (situation.length === 0) rule.situation.forEach((x, i) => situation.push({ order: i + 1, ...x }));
-  for (const c of rule.concerns) if (!concerns.includes(c)) concerns.push(c);
-  for (const r of rule.requests) if (!requests.includes(r)) requests.push(r);
+  if (situation.length === 0) rules.flatMap((r) => r.situation).forEach((x, i) => situation.push({ order: i + 1, ...x }));
+  for (const c of rules.flatMap((r) => r.concerns)) if (!concerns.includes(c)) concerns.push(c);
+  for (const r of rules.flatMap((x) => x.requests)) if (!requests.includes(r)) requests.push(r);
+
+  // 연락 방법은 마지막으로 말한 것을 따른다
+  const contactText = [...texts].reverse().find((t) => parseMethods(t) || parseTimeWindow(t)) ?? text;
 
   return {
-    basicInfo: { grade: Number(n.slice(0, 1)), classNo: Number(n.slice(1, 3)), receivedAt, tags: [rule.tag] },
+    basicInfo: { grade: Number(n.slice(0, 1)), classNo: Number(n.slice(1, 3)), receivedAt, tags: [...new Set(rules.map((r) => r.tag))] },
     attribution: '학부모님 설명에 따르면',
-    situation: situation.slice(0, 5),
-    concerns: concerns.slice(0, 4),
-    requests: requests.slice(0, 5),
-    preferredContact: { methods: parseMethods(text) ?? ['MESSAGE'], timeWindow: parseTimeWindow(text) },
-    regulations: rule.regulations.map(reg),
+    situation: situation.slice(0, 8),
+    concerns: concerns.slice(0, 5),
+    requests: requests.slice(0, 6),
+    preferredContact: { methods: parseMethods(contactText) ?? ['MESSAGE'], timeWindow: parseTimeWindow(contactText) },
+    regulations: [...new Set(rules.flatMap((r) => r.regulations))].map(reg),
     confirmedByParentAt: null,
   };
 }

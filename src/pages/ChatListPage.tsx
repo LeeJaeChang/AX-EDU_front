@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ChatSettingsModal from '../components/ChatSettingsModal';
 import ContactList from '../components/ContactList';
+import ParentComplaintEntry from '../components/complaint/ParentComplaintEntry';
 import { GearIcon, SearchIcon } from '../components/Icons';
 import RoomListItem from '../components/RoomListItem';
 import { useDebounced } from '../hooks/useDebounced';
@@ -10,7 +11,33 @@ import { useRooms } from '../hooks/useRooms';
 
 type Tab = 'rooms' | 'new';
 
+/**
+ * 학부모는 대화 목록 없이 '민원하기' 한 화면만 본다 — 선생님과의 대화는 상담을 거쳐 시작하고,
+ * 이미 보낸 민원의 대화는 '지난 민원'에서 들어간다.
+ * 교사는 대화 목록 / 새 대화 탭 그대로.
+ */
 export default function ChatListPage() {
+  return useMe().role === 'PARENT' ? <ParentHome /> : <StaffChatList />;
+}
+
+function ParentHome() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  return (
+    <main className="page wrap">
+      <header className="list-head">
+        <h1 className="page-title">민원하기</h1>
+        <button type="button" className="btn btn--soft" onClick={() => setSettingsOpen(true)}>
+          <GearIcon width={18} height={18} />
+          내 채팅 설정
+        </button>
+      </header>
+      <ParentComplaintEntry />
+      {settingsOpen && <ChatSettingsModal isTeacher={false} onClose={() => setSettingsOpen(false)} />}
+    </main>
+  );
+}
+
+function StaffChatList() {
   const me = useMe();
   const [params, setParams] = useSearchParams();
   const tab: Tab = params.get('tab') === 'new' ? 'new' : 'rooms';
@@ -31,7 +58,7 @@ export default function ChatListPage() {
 
   const switchTab = (t: Tab) => {
     setQ('');
-    setParams(t === 'new' ? { tab: 'new' } : {}, { replace: true });
+    setParams(t === 'rooms' ? {} : { tab: t }, { replace: true });
   };
 
   return (

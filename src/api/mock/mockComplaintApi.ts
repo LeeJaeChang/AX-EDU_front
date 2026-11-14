@@ -4,19 +4,22 @@ import type { ComplaintApi } from '../complaintApi';
 import type {
   CardEditableFields,
   Complaint,
+  ConsultMessage,
   ComplaintStatus,
   Escalation,
   SummaryCard,
   SummaryCardResult,
   UserSummary,
 } from '../types';
-import { buildCard, draftReply, explain, REGULATIONS, revise, suggestionsFor } from './mockAi';
+import { draftReply, REGULATIONS, revise, suggestionsFor } from './mockAi';
+import { cardFromConsult, continueConsult, emptyConsult, RECIPIENTS, startConsult } from './mockConsult';
 import {
   changeStatus,
   clone,
   complaints,
   delay,
   emit,
+  ensureDirect,
   genId,
   me,
   nowIso,
@@ -32,7 +35,16 @@ import {
 import './mockChatApi'; // 시드 데이터 보장
 
 const AI_DELAY = 1200;
+const MAX_TURNS = 40;
 const idempotency = new Map<string, string>();
+const ctx = { users, now: nowIso, genId };
+
+function checkContent(raw: string) {
+  const content = raw.trim();
+  if (!content) throw new ApiError(400, 'VALIDATION_ERROR', '내용을 입력해 주세요.', { fields: { content: 'required' } });
+  if (content.length > 2000) throw new ApiError(400, 'VALIDATION_ERROR', '2,000자까지 쓸 수 있어요.', { fields: { content: 'max 2000' } });
+  return content;
+}
 
 function invalid(c: ComplaintRow, action: string): never {
   throw new ApiError(409, 'INVALID_COMPLAINT_STATUS', `현재 상태(${c.status})에서는 ${action}할 수 없습니다.`, { status: c.status });
@@ -79,10 +91,19 @@ function view(c: ComplaintRow): Complaint {
     id: c.id,
     status: c.status,
     parent: clone(users[c.parentId]),
-    teacher: clone(users[c.teacherId]),
+    teacher: c.teacherId ? clone(users[c.teacherId]) : null,
     student: clone(users[c.studentId]),
     roomId: c.roomId,
-    ...(isTeacher ? {} : { originalText: c.originalText, aiExplanation: clone(c.explanation) }),
+    // 교사에게는 학부모 원문·AI 상담 내용을 주지 않는다
+    ...(isTeacher
+      ? {}
+      : {
+          originalText: c.originalText,
+          aiExplanation: clone(c.explanation),
+          consultation: clone(c.consultation),
+          consultStage: PRE_SUBMIT.includes(c.status) && c.status !== 'CARD_DRAFTING' ? c.consult.stage : null,
+          proposedTeacher: c.consult.teacherId ? clone(users[c.consult.teacherId]) : null,
+        }),
     summaryCard: stripCard(card),
     teacherReply: clone(c.reply),
     escalation: clone(c.escalation),
@@ -112,14 +133,22 @@ function checkBase(c: ComplaintRow, baseVersion: number) {
   return latest;
 }
 
-/** 목 AI 실패 재현: 민원 내용에 [AI실패]를 넣으면 422 */
-function runExplanation(c: ComplaintRow) {
-  if (c.originalText.includes('[AI실패]') && !c.explanation && !(c as { retried?: boolean }).retried) {
+/** 상담사의 첫 반응. 목 AI 실패 재현: 민원 내용에 [AI실패]를 넣으면 한 번 422 */
+function runFirstReply(c: ComplaintRow) {
+  if (c.originalText.includes('[AI실패]') && !(c as { retried?: boolean }).retried) {
     (c as { retried?: boolean }).retried = true;
     throw new ApiError(422, 'AI_PROCESSING_FAILED', 'AI 응답이 늦어지고 있어요. 작성하신 내용은 저장되었으니 다시 시도해 주세요.', { complaintId: c.id });
   }
-  c.explanation = explain(c.originalText);
+  c.consultation.push(...startConsult(c.originalText, c.consult, ctx));
 }
+
+const parentMessage = (content: string, value?: string): ConsultMessage => ({
+  id: genId('cm_'),
+  from: 'PARENT',
+  content,
+  ...(value ? { value } : {}),
+  createdAt: nowIso(),
+});
 
 export const mockComplaintApi: ComplaintApi = {
   async create(body, key) {
@@ -128,23 +157,30 @@ export const mockComplaintApi: ComplaintApi = {
     const dupId = idempotency.get(`${parent.id}:${key}`);
     if (dupId) return view(complaints.get(dupId)!);
 
-    const room = rooms.get(body.roomId);
-    const teacher = room && teacherOf(room);
-    if (!room || !room.members.includes(parent.id) || !teacher) throw new ApiError(404, 'NOT_FOUND', '채팅방을 찾을 수 없습니다.');
+    // 방에서 시작하면 그 방의 선생님으로 정해지고, 채팅 목록에서 시작하면 제출할 때 고른다
+    let roomId: string | null = null;
+    let teacherId: string | null = null;
+    if (body.roomId) {
+      const room = rooms.get(body.roomId);
+      const teacher = room && teacherOf(room);
+      if (!room || !room.members.includes(parent.id) || !teacher) throw new ApiError(404, 'NOT_FOUND', '채팅방을 찾을 수 없습니다.');
+      roomId = room.id;
+      teacherId = teacher.id;
+    }
     if (!parent.childStudentIds?.includes(body.studentId)) throw new ApiError(403, 'FORBIDDEN', '자녀로 등록된 학생이 아닙니다.');
-    const content = body.content.trim();
-    if (!content) throw new ApiError(400, 'VALIDATION_ERROR', '내용을 입력해 주세요.', { fields: { content: 'required' } });
-    if (content.length > 2000) throw new ApiError(400, 'VALIDATION_ERROR', '2,000자까지 쓸 수 있어요.', { fields: { content: 'max 2000' } });
+    const content = checkContent(body.content);
 
     const c: ComplaintRow = {
       id: genId('cmp_'),
-      roomId: room.id,
+      roomId,
       parentId: parent.id,
-      teacherId: teacher.id,
+      teacherId,
       studentId: body.studentId,
       status: 'EXPLAINED',
       originalText: content,
       explanation: null,
+      consultation: [],
+      consult: emptyConsult(),
       cards: [],
       submittedVersion: null,
       reply: null,
@@ -155,10 +191,11 @@ export const mockComplaintApi: ComplaintApi = {
       closedAt: null,
       resolvedAt: null,
     };
+    c.consultation.push(parentMessage(content));
     complaints.set(c.id, c);
     idempotency.set(`${parent.id}:${key}`, c.id);
     emit({ event: 'complaint.status_changed', data: { complaintId: c.id, from: null, to: 'EXPLAINED', changedAt: c.createdAt } });
-    runExplanation(c); // 실패 시 원문은 보존된 채로 422
+    runFirstReply(c); // 실패 시 원문은 보존된 채로 422
     return view(c);
   },
 
@@ -166,9 +203,46 @@ export const mockComplaintApi: ComplaintApi = {
     requireRole('PARENT');
     await delay(AI_DELAY);
     const c = load(id);
-    requireStatus(c, ['EXPLAINED'], 'AI 설명을 다시 요청');
-    runExplanation(c);
+    requireStatus(c, ['EXPLAINED'], 'AI 답변을 다시 요청');
+    if (c.consult.stage === null) runFirstReply(c);
     return view(c);
+  },
+
+  async consult(id, raw, value) {
+    requireRole('PARENT');
+    await delay(AI_DELAY - 400);
+    const c = load(id);
+    requireStatus(c, ['EXPLAINED'], '상담을 이어');
+    if (c.consult.stage === null) throw new ApiError(422, 'AI_PROCESSING_FAILED', '첫 답변을 먼저 받아 주세요.', { complaintId: c.id });
+    if (c.consultation.length >= MAX_TURNS) {
+      throw new ApiError(400, 'VALIDATION_ERROR', "상담이 길어졌어요. '요약 카드 만들기'로 정리해 주세요.", { fields: { content: 'max turns' } });
+    }
+    const content = checkContent(raw);
+    c.consultation.push(parentMessage(content, value));
+    c.consultation.push(
+      ...continueConsult(content, value, c.consult, ctx, {
+        fixedTeacherId: c.teacherId,
+        setExplanation: (e) => (c.explanation = e),
+      }),
+    );
+    return view(c);
+  },
+
+  async listRecipients(id) {
+    requireRole('PARENT');
+    await delay();
+    const c = load(id);
+    if (c.teacherId) {
+      const fixed = RECIPIENTS.find((r) => r.id === c.teacherId);
+      return [{ teacher: clone(users[c.teacherId]), label: fixed?.label ?? '선생님', recommended: true, reason: '이 채팅방의 선생님이에요.' }];
+    }
+    const pick = c.consult.teacherId;
+    return RECIPIENTS.map((r) => ({
+      teacher: clone(users[r.id]),
+      label: r.label,
+      recommended: r.id === pick,
+      ...(r.id === pick ? { reason: '상담에서 함께 정한 선생님이에요.' } : {}),
+    }));
   },
 
   async close(id) {
@@ -186,8 +260,10 @@ export const mockComplaintApi: ComplaintApi = {
     await delay(AI_DELAY);
     const c = load(id);
     requireStatus(c, ['EXPLAINED'], '요약 카드를 생성');
-    if (!c.explanation) throw new ApiError(422, 'AI_PROCESSING_FAILED', 'AI 설명을 먼저 받아 주세요.');
-    const card = pushCard(c, buildCard(c.originalText, users[c.studentId], c.createdAt), 'AI_GENERATED');
+    if (c.consult.stage !== 'READY') {
+      throw new ApiError(409, 'INVALID_COMPLAINT_STATUS', '상담을 조금 더 나눈 뒤에 요약 카드를 만들 수 있어요.', { stage: c.consult.stage });
+    }
+    const card = pushCard(c, cardFromConsult(c.consult, users[c.studentId], c.createdAt), 'AI_GENERATED');
     changeStatus(c, 'CARD_DRAFTING');
     return cardResult(card);
   },
@@ -233,14 +309,21 @@ export const mockComplaintApi: ComplaintApi = {
     return cardResult(pushCard(c, next, 'PARENT_EDIT'));
   },
 
-  async submit(id, cardVersion, key) {
+  async submit(id, cardVersion, teacherId, key) {
     const parent = requireRole('PARENT');
     await delay();
     const dup = idempotency.get(`${parent.id}:${key}`);
     if (dup) return view(complaints.get(dup)!);
     const c = load(id);
     requireStatus(c, ['CARD_DRAFTING'], '보내기');
+    if (!RECIPIENTS.some((r) => r.id === teacherId) || (c.teacherId && c.teacherId !== teacherId)) {
+      throw new ApiError(400, 'VALIDATION_ERROR', '받을 선생님을 다시 골라 주세요.', { fields: { teacherId: 'invalid' } });
+    }
     const card = checkBase(c, cardVersion);
+    // 받는 선생님과의 DIRECT 방에 연결 (없으면 새로 만든다)
+    const room = c.roomId ? rooms.get(c.roomId)! : ensureDirect(parent.id, teacherId);
+    c.roomId = room.id;
+    c.teacherId = teacherId;
     const at = nowIso();
     card.confirmedByParentAt = at;
     c.submittedVersion = card.version;
@@ -250,7 +333,7 @@ export const mockComplaintApi: ComplaintApi = {
     // 방에 COMPLAINT_CARD 1건 — 학부모와 교사가 같은 카드를 본다
     postMessage({
       id: genId('msg_'),
-      roomId: c.roomId,
+      roomId: room.id,
       type: 'COMPLAINT_CARD',
       sender: clone(parent),
       content: '민원 요약 카드를 보냈습니다.',
@@ -321,7 +404,7 @@ export const mockComplaintApi: ComplaintApi = {
     changeStatus(c, 'IN_CONVERSATION');
     postMessage({
       id: messageId,
-      roomId: c.roomId,
+      roomId: c.roomId!,
       type: 'COMPLAINT_REPLY',
       sender: clone(teacher),
       content: c.reply.content,

@@ -135,9 +135,10 @@ export function useMessages(roomId: string, me: UserSummary) {
           attachmentIds: out.attachments.map((a) => a.id),
         });
         setMessages((prev) => {
-          // 실시간 에코가 먼저 왔으면 중복 제거
-          const withoutEcho = prev.filter((m) => m.id !== saved.id);
-          return withoutEcho.map((m) => (m.clientMessageId === clientMessageId ? saved : m));
+          // 낙관적 메시지를 서버 응답으로 바꾸고, 실시간 에코가 먼저 와서 이미 바뀌었으면 한 건만 남긴다.
+          // (에코가 낙관적 메시지를 이미 대체한 경우 id로 걸러 내면 메시지 자체가 사라졌다)
+          const replaced = prev.map((m) => (m.clientMessageId === clientMessageId ? saved : m));
+          return replaced.filter((m, i) => m.id !== saved.id || replaced.findIndex((x) => x.id === saved.id) === i);
         });
       } catch (e) {
         setMessages((prev) =>
