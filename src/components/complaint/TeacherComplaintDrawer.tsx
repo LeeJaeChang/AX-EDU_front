@@ -152,7 +152,7 @@ export default function TeacherComplaintDrawer({ complaintId, onClose }: Props) 
               <p className="callout callout--muted">
                 학부모님 원문은 보이지 않아요. AI가 감정 표현을 덜어 내고 있었던 일과 요청 위주로 정리한 카드입니다.
               </p>
-              <SummaryCardView card={card} />
+              <SummaryCardView card={card} showEmotion />
 
               {c.escalation && (
                 <section className="panel panel--warn">

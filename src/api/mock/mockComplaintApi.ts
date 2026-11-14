@@ -75,11 +75,12 @@ function load(id: string): ComplaintRow {
 }
 
 const latestCard = (c: ComplaintRow) => c.cards[c.cards.length - 1] ?? null;
+/** 내부 기록을 빼고 응답 모양으로. 학부모 마음 상태(parentEmotion)는 교사·민원대응팀에게만 준다 */
 const stripCard = (card: CardRow | null): SummaryCard | null => {
   if (!card) return null;
-  const { source: _s, revisionInstruction: _r, suggestions: _g, ...rest } = card;
+  const { source: _s, revisionInstruction: _r, suggestions: _g, parentEmotion, ...rest } = card;
   void _s, void _r, void _g;
-  return clone(rest);
+  return clone(me().role === 'PARENT' ? rest : { ...rest, parentEmotion });
 };
 
 /** 역할별 응답 모양. 교사에게는 학부모 원문과 AI 설명을 빼고, 제출된 카드만 준다 (명세서 3.5, 7.7) */

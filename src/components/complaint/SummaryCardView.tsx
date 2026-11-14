@@ -18,12 +18,15 @@ interface Props {
   busy?: boolean;
   /** 카드 맨 아래(‘카드 전체 보기’ 바로 밑)에 붙는 행동 버튼 */
   footer?: ReactNode;
+  /** 학부모 마음 상태 표시 — 교사 화면에서만 true. (서버도 학부모 응답에서는 parentEmotion을 빼지만 한 번 더 막는다) */
+  showEmotion?: boolean;
 }
 
 /** 요약 카드 (명세서 3.7). 학부모와 교사가 같은 카드를 본다. */
-export default function SummaryCardView({ card, compact = false, suggestions, onApplySuggestion, busy, footer }: Props) {
+export default function SummaryCardView({ card, compact = false, suggestions, onApplySuggestion, busy, footer, showEmotion = false }: Props) {
   const [open, setOpen] = useState(!compact);
-  const { basicInfo, preferredContact, urgency, parentEmotion: emotion } = card;
+  const { basicInfo, preferredContact, urgency } = card;
+  const emotion = showEmotion ? card.parentEmotion : undefined;
 
   return (
     <article className={`scard ${compact ? 'scard--compact' : ''} ${urgency?.level === 'URGENT' ? 'scard--urgent' : ''}`} aria-label="민원 요약 카드">
@@ -36,7 +39,7 @@ export default function SummaryCardView({ card, compact = false, suggestions, on
           {basicInfo.grade}학년 {basicInfo.classNo}반 · 접수 {formatDateTime(basicInfo.receivedAt)}
         </p>
         <div className="chips">
-          {/* 빠른 대응 여부와 학부모 마음 상태는 접힌 카드에서도 먼저 보이게 */}
+          {/* 빠른 대응 여부와 (교사에게) 학부모 마음 상태는 접힌 카드에서도 먼저 보이게 */}
           {urgency && urgency.level !== 'NORMAL' && (
             <span className={`pill ${URGENCY_TONE[urgency.level]}`}>{URGENCY_LABEL[urgency.level]}</span>
           )}
@@ -91,7 +94,7 @@ export default function SummaryCardView({ card, compact = false, suggestions, on
                   ))}
                 </ul>
               )}
-              <p className="scard__hint">AI가 상담 대화를 보고 정리했어요. 학부모님이 쓰신 원문은 전달되지 않아요.</p>
+              <p className="scard__hint">AI가 상담 대화를 보고 정리했어요. 선생님께만 보이고 학부모님 카드에는 나타나지 않아요. 학부모님이 쓰신 원문은 전달되지 않아요.</p>
             </section>
           )}
 

@@ -16,7 +16,7 @@ import type {
   UrgencyLevel,
   UserSummary,
 } from '../types';
-import { EMOTION_LABEL, URGENCY_LABEL } from '../../lib/complaint';
+import { URGENCY_LABEL } from '../../lib/complaint';
 import {
   assessEmotion,
   buildCard,
@@ -217,10 +217,7 @@ function factsOf(cs: ConsultState, ctx: Ctx, withContact = false): ConsultFact[]
       label: '희망 연락',
       value: [s.methods?.map((m) => METHOD_LABEL[m]).join('·') ?? '채팅 메시지', s.timeWindow ? `${s.timeWindow.from}~${s.timeWindow.to}` : '시간 무관'].join(', '),
     });
-    // 선생님께 함께 전해지는 마음 상태 — 학부모에게도 그대로 보여 준다
-    const emo = assessEmotion(cs.parentSaid);
-    const flow = emo.trend === 'EASING' ? ' (상담하며 차분해지심)' : emo.trend === 'RISING' ? ' (상담하며 더 격해지심)' : '';
-    facts.push({ label: '마음 상태', value: `${EMOTION_LABEL[emo.level]}${flow}` });
+    // 학부모 마음 상태는 교사용 카드에만 담기므로 학부모에게 보이는 정리표에는 넣지 않는다
   }
   return facts;
 }
@@ -420,7 +417,7 @@ export function continueConsult(
     cs.parentSaid.push(text);
     if (!cs.emotionAcked && assessEmotion([text]).level === 'AGITATED') {
       cs.emotionAcked = true;
-      feel = '많이 화가 나고 답답하신 마음, 충분히 이해해요. 그 마음도 선생님께 함께 전해 드릴게요.';
+      feel = '많이 화가 나고 답답하신 마음, 충분히 이해해요. 천천히 하나씩 함께 정리해 볼게요.';
     }
   }
   const withFeel = (out: ConsultMessage[]) => (feel ? [ai(ctx, { content: feel }), ...out] : out);

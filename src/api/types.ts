@@ -273,8 +273,11 @@ export interface SummaryCard {
   regulations: Regulation[];
   /** 빠른 대응 필요 여부 */
   urgency: CardUrgency;
-  /** 상담 중 학부모 감정 상태 (regulations·attribution처럼 학부모가 고칠 수 없음) */
-  parentEmotion: ParentEmotion;
+  /**
+   * 상담 중 학부모 감정 상태 — 교사(와 민원대응팀)에게만 내려간다. 학부모 응답에서는 빠진다.
+   * AI 판단이라 학부모가 고칠 수 없다.
+   */
+  parentEmotion?: ParentEmotion;
   confirmedByParentAt: string | null;
 }
 
