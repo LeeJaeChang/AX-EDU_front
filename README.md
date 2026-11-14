@@ -45,6 +45,15 @@ VITE_API_HOST=https://{superschool-host}
 - WebSocket: `wss://{host}/ws/axedu/v1?token={accessToken}`
 - 액세스 토큰은 `localStorage`의 `axedu.accessToken`에서 읽습니다(슈퍼스쿨 SSO 토큰). 로그인 사용자 정보(`userId`, `role`, `name`)는 토큰 payload에서 읽습니다.
 
+### Vercel 배포
+
+GitHub 저장소를 Vercel 프로젝트로 가져오면 [`vercel.json`](vercel.json) 설정대로 빌드합니다(Vite, `npm run build`, 출력 `dist`).
+
+- **새로고침 404 방지**: 화면 주소(`/chat`, `/complaint/…`)는 브라우저 라우팅이라 실제 파일이 없습니다. `vercel.json`의 `rewrites`가 실제 파일이 없는 모든 경로를 `index.html`로 돌려줍니다(`/assets/*` 같은 빌드 파일은 그대로 제공).
+- **환경 변수**: 목 데이터 시연이면 입력하지 않습니다(값이 없으면 목 모드). 실제 서버에 붙일 때만 Vercel **Settings → Environment Variables**에 `VITE_USE_MOCK=false`, `VITE_API_HOST`를 넣고 **다시 배포**합니다(빌드 때 코드에 들어가는 값). `.env` 파일은 올리지 않습니다.
+- **서버 쪽 준비(실서버 연결 시)**: Vercel 도메인을 CORS 허용 목록에 추가하고, `wss://{VITE_API_HOST 호스트}/ws/axedu/v1` 연결을 열어 둡니다.
+- 목 데이터는 브라우저 메모리에만 있어 새로고침하면 처음 상태로 돌아가고, 다른 사용자와 공유되지 않습니다.
+
 ## 기술 스택
 
 | 항목 | 사용 |
