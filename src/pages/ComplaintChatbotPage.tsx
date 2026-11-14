@@ -181,7 +181,7 @@ export default function ComplaintChatbotPage() {
 
       <div className="room-body">
         <header className="room-head room-head--bot">
-          <span className="avatar avatar--ai" style={{ width: 64, height: 64 }} aria-hidden="true">AI</span>
+          <span className="avatar avatar--ai" style={{ width: 40, height: 40 }} aria-hidden="true">AI</span>
           <div className="room-head__text">
             <h1 className="room-head__name">AI 민원 도우미</h1>
             <p className="room-head__sub">이 대화는 {teacherName} 선생님께 보이지 않아요. ‘확인하고 보내기’를 누른 요약 카드만 전달돼요.</p>
@@ -345,7 +345,7 @@ function order(s: string) {
 
 function BotAvatar() {
   return (
-    <span className="avatar avatar--ai" style={{ width: 48, height: 48 }} aria-hidden="true">
+    <span className="avatar avatar--ai" style={{ width: 36, height: 36 }} aria-hidden="true">
       AI
     </span>
   );

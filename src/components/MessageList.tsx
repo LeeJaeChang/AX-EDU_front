@@ -110,7 +110,7 @@ function MessageRow({
         name={m.sender.name}
         imageUrl={m.sender.profileImageUrl}
         variant={m.sender.role === 'NOTICE' ? 'notice' : 'placeholder'}
-        size={48}
+        size={36}
       />
       <div className="msg__col">
         <span className="msg__sender">{senderLabel(m.sender.name, m.sender.studentNumber)}</span>

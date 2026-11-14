@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { CardSuggestion, SummaryCard } from '../../api';
 import { CONTACT_LABEL, TAG_LABEL } from '../../lib/complaint';
 import { formatDateTime } from '../../lib/format';
@@ -13,10 +13,12 @@ interface Props {
   suggestions?: CardSuggestion[];
   onApplySuggestion?: (s: CardSuggestion) => void;
   busy?: boolean;
+  /** 카드 맨 아래(‘카드 전체 보기’ 바로 밑)에 붙는 행동 버튼 */
+  footer?: ReactNode;
 }
 
 /** 요약 카드 (명세서 3.7). 학부모와 교사가 같은 카드를 본다. */
-export default function SummaryCardView({ card, compact = false, suggestions, onApplySuggestion, busy }: Props) {
+export default function SummaryCardView({ card, compact = false, suggestions, onApplySuggestion, busy, footer }: Props) {
   const [open, setOpen] = useState(!compact);
   const { basicInfo, preferredContact } = card;
 
@@ -129,6 +131,7 @@ export default function SummaryCardView({ card, compact = false, suggestions, on
           {open ? '접기' : '카드 전체 보기'}
         </button>
       )}
+      {footer && <div className="scard__action">{footer}</div>}
     </article>
   );
 }
