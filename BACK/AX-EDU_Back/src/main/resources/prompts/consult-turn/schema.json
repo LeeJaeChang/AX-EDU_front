@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "description": "학부모가 방금 쓴 말 하나의 해석. 말에 없는 칸은 null",
+  "properties": {
+    "when": { "type": ["string", "null"], "description": "일시 (30자 이내)" },
+    "place": { "type": ["string", "null"], "description": "수업·장소 (30자 이내)" },
+    "impact": { "type": ["string", "null"], "description": "아이 상태 한 문장" },
+    "request": { "type": ["string", "null"], "description": "학교에 바라는 점 한 문장 (비난·신고 예고 제외)" },
+    "urgency": { "type": ["string", "null"], "enum": ["URGENT", "SOON", "NORMAL", null] },
+    "methods": {
+      "type": ["array", "null"],
+      "items": { "type": "string", "enum": ["MESSAGE", "CALL", "VISIT"] }
+    },
+    "timeFrom": { "type": ["string", "null"], "description": "HH:mm (24시간제)" },
+    "timeTo": { "type": ["string", "null"], "description": "HH:mm (24시간제)" },
+    "timeAny": { "type": "boolean", "description": "언제든 괜찮다고 했으면 true" },
+    "teacherId": { "type": ["string", "null"], "description": "<teachers> 목록의 ID 중 하나" },
+    "emotion": { "type": "string", "enum": ["CALM", "CONCERNED", "AGITATED"] },
+    "ack": { "type": "string", "description": "상담사의 공감·확인 1~2문장 (80자 이내, 판정·약속·질문 없음)" }
+  },
+  "required": ["when", "place", "impact", "request", "urgency", "methods", "timeFrom", "timeTo", "timeAny", "teacherId", "emotion", "ack"],
+  "additionalProperties": false
+}

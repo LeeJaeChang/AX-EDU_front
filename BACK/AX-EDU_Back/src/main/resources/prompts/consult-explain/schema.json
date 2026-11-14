@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "description": "규정·법령 설명 (근거 자료 목록 안에서만 인용)",
+  "properties": {
+    "empathy": { "type": "string", "description": "공감 한 문장" },
+    "reason": { "type": "string", "description": "관련 규정·법령이 정하는 것 2~4문장 (판정 금지)" },
+    "alternative": { "type": "string", "description": "학부모가 해 볼 수 있는 일 1~2문장" },
+    "citationIds": {
+      "type": "array",
+      "description": "설명에 쓴 자료 ID (최대 4개, <sources> 의 ID 그대로)",
+      "items": { "type": "string" }
+    },
+    "recommendation": { "type": "string", "enum": ["EXPLAINED", "TALK_TO_TEACHER"] }
+  },
+  "required": ["empathy", "reason", "alternative", "citationIds", "recommendation"],
+  "additionalProperties": false
+}

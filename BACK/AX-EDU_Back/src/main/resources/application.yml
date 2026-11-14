@@ -1,0 +1,85 @@
+spring:
+  application:
+    name: axedu-backend
+  profiles:
+    default: local
+  # 프로젝트 루트의 .env (KEY=VALUE) 를 읽어 아래 ${...} 값으로 쓴다. 없으면 무시. 실제 환경 변수가 있으면 그쪽이 우선
+  config:
+    import: optional:file:.env[.properties]
+
+  # PostgreSQL 15+ (모든 프로필 공통). 접속 정보는 .env 에 적는다 (.env.example 참고)
+  # stringtype=unspecified: enum·enum[] 컬럼에 문자열을 그대로 넣기 위해 필요 (AXEDU_DB_URL 을 직접 쓸 때도 붙일 것)
+  datasource:
+    url: ${AXEDU_DB_URL:jdbc:postgresql://${AXEDU_DB_HOST:localhost}:${AXEDU_DB_PORT:5432}/${AXEDU_DB_NAME:axedu}?stringtype=unspecified}
+    username: ${AXEDU_DB_USER:axedu}
+    password: ${AXEDU_DB_PASSWORD:}
+
+  # 스키마는 Flyway 가 만든다 (src/main/resources/db/migration/V{번호}__{설명}.sql).
+  # 테이블·컬럼을 바꿀 때는 기존 파일을 고치지 말고 새 버전 파일을 추가한다
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jackson:
+    time-zone: Asia/Seoul
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 21MB
+  jpa:
+    open-in-view: false
+    database-platform: com.axedu.common.jpa.AxeduPostgreSQLDialect
+    hibernate:
+      ddl-auto: validate   # Hibernate 는 테이블을 만들지 않고, 엔티티가 Flyway 스키마와 맞는지만 검사
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Seoul
+
+server:
+  port: 8080
+
+# API 문서: Swagger UI http://localhost:8080/swagger-ui.html , OpenAPI JSON /v3/api-docs
+springdoc:
+  paths-to-match: /api/**
+  default-produces-media-type: application/json
+  swagger-ui:
+    tags-sorter: alpha
+    operations-sorter: method
+    persist-authorization: true   # 새로고침해도 Authorize 토큰 유지
+    display-request-duration: true
+
+axedu:
+  jwt:
+    # HS256 서명 키 (32바이트 이상). 운영에서는 환경 변수로 주입
+    secret: ${AXEDU_JWT_SECRET:axedu-local-dev-jwt-secret-change-me-0123456789}
+    dev-token-ttl-minutes: 720
+  crypto:
+    # 학부모 원문 암호화 키 (Base64 32바이트). 운영에서는 KMS 데이터 키로 교체
+    key: ${AXEDU_CRYPTO_KEY:YXhlZHUtbG9jYWwtZGV2LWNyeXB0by1rZXktMzJieXQ=}
+  cors:
+    allowed-origins:
+      - ${AXEDU_FRONT_ORIGIN:http://localhost:5173}
+  storage:
+    local-dir: ${AXEDU_UPLOAD_DIR:./uploads}
+    public-base-url: ${AXEDU_PUBLIC_BASE_URL:http://localhost:8080}
+    url-ttl-minutes: 60
+    sign-key: ${AXEDU_FILE_SIGN_KEY:axedu-local-dev-file-sign-key}
+  # 키워드 기반 법령 조회 파이썬 서버 (python3 ai/law_search_server.py)
+  law-search:
+    base-url: ${AXEDU_LAW_SEARCH_URL:http://127.0.0.1:8090}
+    timeout-millis: 3000
+  # 시연용 데모 데이터·계정. local 프로필은 항상 켜짐(application-local.yml), 배포는 AXEDU_DEMO_ENABLED=true
+  demo:
+    enabled: ${AXEDU_DEMO_ENABLED:false}
+    token-expires-at: ${AXEDU_DEMO_TOKEN_EXPIRES_AT:2026-12-31T23:59:59+09:00}
+  # OpenAI(ChatGPT) — 민원 키워드 추출. 키가 비어 있으면 규칙 기반 대체 구현으로 동작
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    model: ${AXEDU_OPENAI_MODEL:gpt-4.1-mini}
+    timeout-millis: ${AXEDU_OPENAI_TIMEOUT_MILLIS:20000}
+    temperature: 0.2

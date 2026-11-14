@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "description": "학부모 민원에서 뽑은 법령 검색 키워드. 필드 순서대로 생각한다 (상황 → 쟁점 → 키워드 → 분류)",
+  "properties": {
+    "situationSummary": {
+      "type": "string",
+      "description": "민원 사실관계 한 문장 요약 (60자 안팎, 감정 표현·개인정보 제외)"
+    },
+    "legalIssues": {
+      "type": "array",
+      "description": "법령·규정으로 따져 볼 쟁점 1~3개 (질문 형태)",
+      "items": { "type": "string" }
+    },
+    "keywords": {
+      "type": "array",
+      "description": "검색 키워드 3~6개, 중요한 순서. 법령 용어 명사(구)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "term": { "type": "string", "description": "검색 키워드 (2~10자 명사, 두 단어까지)" },
+          "evidence": { "type": "string", "description": "근거가 된 민원 원문 표현 (20자 이내)" }
+        },
+        "required": ["term", "evidence"],
+        "additionalProperties": false
+      }
+    },
+    "category": {
+      "type": "string",
+      "enum": ["LIFE_GUIDANCE", "STUDY_EVALUATION", "PEER_RELATION", "SAFETY", "ETC"],
+      "description": "민원 분류"
+    }
+  },
+  "required": ["situationSummary", "legalIssues", "keywords", "category"],
+  "additionalProperties": false
+}

@@ -1,0 +1,8 @@
+# 로컬 개발: PostgreSQL(.env) + 데모 시드 데이터(users 가 비어 있을 때 1회) + /dev/token
+logging:
+  level:
+    com.axedu: debug
+
+axedu:
+  demo:
+    enabled: true
