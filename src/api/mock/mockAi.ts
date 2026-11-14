@@ -5,12 +5,15 @@ import type {
   CardSuggestion,
   ComplaintTag,
   ContactMethod,
+  EmotionTrend,
+  ParentEmotion,
   Regulation,
   ReplyDraft,
   ReplyDraftBody,
   SituationItem,
   SummaryCard,
   TimeRange,
+  UrgencyLevel,
   UserSummary,
 } from '../types';
 
@@ -199,6 +202,72 @@ export function soften(s: string) {
     .trim();
 }
 
+// ---------- 빠른 대응 필요 여부 ----------
+
+/** 안전·건강이 걸린 표현 → 긴급 후보 */
+const SAFETY_URGENT = /다쳤|다치|부상|병원|응급|피가|폭력|때렸|맞았|자해|죽고 싶|위험|협박|성희롱|성추행/;
+const TIME_URGENT = /오늘 안에|오늘 중|당장|바로|급해|급합니다|급한/;
+
+export function detectUrgency(text: string): UrgencyLevel | null {
+  if (SAFETY_URGENT.test(text) || TIME_URGENT.test(text)) return 'URGENT';
+  if (/며칠|이번 ?주|내일/.test(text)) return 'SOON';
+  return null;
+}
+
+export function urgencyReason(text: string): string | null {
+  if (SAFETY_URGENT.test(text)) return '학생 안전·건강 관련';
+  if (TIME_URGENT.test(text)) return '보호자가 빠른 확인 요청';
+  return null;
+}
+
+// ---------- 학부모 감정 상태 ----------
+
+/** 책임 추궁·외부 신고 표현 — 카드 본문에는 넣지 않고 '학부모 마음 상태' 신호로만 전한다 */
+export const THREAT = /무책임|제정신|가만 안|고소|교육청|신고|민원 넣|언론|책임지/;
+
+const SIGNALS: { label: string; re: RegExp; weight: number }[] = [
+  { label: '강한 불만 표현', re: /말이 (됩니까|되나요|돼요|되냐)|어이(가)? ?없|황당|화가 나|기가 막|너무하|최악|이해가 안 ?(됩니다|돼요|가요|갑니다)|도대체|어떻게 이럴/, weight: 2 },
+  { label: '반복된 느낌표·물음표', re: /[!?]{2,}/, weight: 1 },
+  { label: '책임 추궁·외부 신고 언급', re: THREAT, weight: 3 },
+  { label: '불안·걱정 표현', re: /걱정|불안|무서|잠을 못|어떡/, weight: 0 },
+  { label: '아이가 힘들어한다는 표현', re: /속상|울었|울어|힘들어|싫다고|시무룩|당황/, weight: 0 },
+];
+
+const scoreOf = (t: string) => SIGNALS.reduce((n, s) => n + (s.re.test(t) ? s.weight : 0), 0);
+
+/**
+ * 학부모가 직접 쓴 말 전체로 감정 상태를 정리한다. 원문은 드러내지 않고 신호 분류만 남긴다.
+ * 격양: 점수 3 이상 또는 책임 추궁·외부 신고 언급 / 걱정·속상함: 그 외 감정 신호 / 차분함: 신호 없음
+ */
+export function assessEmotion(texts: string[]): ParentEmotion {
+  const said = texts.filter((t) => t.trim().length > 0);
+  const scores = said.map(scoreOf);
+  const signals = SIGNALS.filter((s) => said.some((t) => s.re.test(t))).map((s) => s.label);
+  const peak = Math.max(0, ...scores);
+  const level: ParentEmotion['level'] =
+    peak >= 3 || signals.includes('책임 추궁·외부 신고 언급') ? 'AGITATED' : signals.length > 0 ? 'CONCERNED' : 'CALM';
+
+  const first = scores[0] ?? 0;
+  const last = scores[scores.length - 1] ?? 0;
+  const trend: EmotionTrend = said.length < 2 ? 'STEADY' : last < first ? 'EASING' : last > first ? 'RISING' : 'STEADY';
+
+  const base =
+    level === 'AGITATED'
+      ? '상담 중 강한 불만과 답답함을 표현하셨어요.'
+      : level === 'CONCERNED'
+        ? '아이를 걱정하고 속상해하는 마음이 크세요.'
+        : '차분하게 상황을 설명해 주셨어요.';
+  const flow =
+    trend === 'EASING' ? ' 대화를 이어 가며 조금씩 차분해지셨어요.' : trend === 'RISING' ? ' 대화가 이어질수록 감정이 더 격해지셨어요.' : '';
+  const tip =
+    level === 'AGITATED'
+      ? ' 첫 연락은 먼저 마음을 알아주는 말로 시작하고, 사실관계는 그다음에 차분히 설명하시길 권해요.'
+      : level === 'CONCERNED'
+        ? ' 아이가 어떻게 지내는지부터 함께 이야기하면 좋아요.'
+        : '';
+  return { level, trend, signals, summary: `${base}${flow}${tip}` };
+}
+
 // ---------- STEP 1: 규정 설명 ----------
 
 export function explain(text: string): AiExplanation {
@@ -253,7 +322,18 @@ export function parseMethods(text: string): ContactMethod[] | null {
 }
 
 /** 여러 턴에 걸쳐 말한 내용에서 걸린 규칙들 (없으면 FALLBACK 하나) */
-export function rulesOf(texts: string[]) {
+/**
+ * 텍스트로 규칙을 못 찾으면 사전 분류(category)를 따른다.
+ * 규칙이 하나뿐인 분류(평가·교우관계·안전)는 그 규칙을, 아니면 기타 규칙에 분류 태그만 붙인다.
+ */
+export function rulesOf(texts: string[], category?: ComplaintTag | null) {
+  const found = rulesByText(texts);
+  if (found[0] !== FALLBACK || !category || category === 'ETC') return found;
+  const same = RULES.filter((r) => r.tag === category);
+  return same.length === 1 ? same : [{ ...FALLBACK, tag: category }];
+}
+
+function rulesByText(texts: string[]) {
   const found: Rule[] = [];
   for (const t of texts) {
     const r = RULES.find((x) => x.match.test(t));
@@ -266,10 +346,15 @@ export function rulesOf(texts: string[]) {
  * 상담 전체(최초 민원 + 이어서 말한 내용)를 한 장의 카드로 정리한다.
  * 상황은 턴 순서대로, 태그·근거 규정은 걸린 규칙을 모두 모은다.
  */
-export function buildCard(input: string | string[], student: UserSummary, receivedAt: string): Omit<SummaryCard, 'version'> {
+export function buildCard(
+  input: string | string[],
+  student: UserSummary,
+  receivedAt: string,
+  category?: ComplaintTag | null,
+): Omit<SummaryCard, 'version'> {
   const texts = Array.isArray(input) ? input : [input];
   const text = texts.join('\n');
-  const rules = rulesOf(texts);
+  const rules = rulesOf(texts, category);
   const sentences = texts.flatMap(sentencesOf);
   const n = student.studentNumber ?? '00000';
 
@@ -280,6 +365,7 @@ export function buildCard(input: string | string[], student: UserSummary, receiv
   for (const s of sentences) {
     const clean = soften(s);
     if (!clean || clean.length < 4) continue; // 감정 표현만 있던 문장은 버린다
+    if (THREAT.test(s)) continue; // 신고·책임 추궁 표현은 마음 상태 신호로만
     if (CONTACT_PREF.test(s) && (parseMethods(s) || parseTimeWindow(s))) continue;
     if (REQUEST.test(s)) requests.push(clean);
     else if (CONCERN.test(s)) concerns.push(clean);
@@ -307,6 +393,8 @@ export function buildCard(input: string | string[], student: UserSummary, receiv
     requests: requests.slice(0, 6),
     preferredContact: { methods: parseMethods(contactText) ?? ['MESSAGE'], timeWindow: parseTimeWindow(contactText) },
     regulations: [...new Set(rules.flatMap((r) => r.regulations))].map(reg),
+    urgency: { level: detectUrgency(text) ?? 'NORMAL', reason: urgencyReason(text) },
+    parentEmotion: assessEmotion(texts),
     confirmedByParentAt: null,
   };
 }
@@ -360,6 +448,16 @@ export function revise(card: SummaryCard, instruction: string): Omit<SummaryCard
   const window = parseTimeWindow(instruction);
   if (window) {
     next.preferredContact.timeWindow = window;
+    changed = true;
+  }
+
+  // '긴급으로 바꿔 주세요' / '급하지 않아요'
+  const calm = /급하지 않|급한 건 아니|천천히|여유/.test(instruction);
+  if (!calm && /긴급|급해|급하|빨리/.test(instruction)) {
+    next.urgency = { level: 'URGENT', reason: next.urgency.reason ?? '보호자가 빠른 확인 요청' };
+    changed = true;
+  } else if (calm) {
+    next.urgency = { level: 'NORMAL', reason: null };
     changed = true;
   }
 

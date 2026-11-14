@@ -516,6 +516,7 @@ a.btn { text-decoration: none; }
 }
 .banner .btn--sm { padding: 5px 14px; font-size: var(--fs-xs); }
 .banner--accent { border-color: var(--accent); background: var(--accent-soft); }
+.banner--urgent { border-color: var(--warn); background: var(--warn-soft); }
 .banner__text { flex: 1; min-width: 12rem; font-size: var(--fs-xs); }
 
 /* ---------- AI 챗봇 화면 ---------- */
@@ -750,6 +751,13 @@ a.btn { text-decoration: none; }
 .steps__what { font-size: var(--fs-sm); }
 
 .scard__suggest { background: var(--mark-soft); }
+.scard--urgent { border-top-color: var(--warn); }
+.scard__emotion-text { font-size: var(--fs-sm); }
+.scard__signals { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.scard__signals li {
+  padding: 2px 10px; border-radius: var(--r-pill); border: 1px solid var(--line);
+  color: var(--muted); font-size: var(--fs-2xs);
+}
 .suggest-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
 .suggest {
   display: grid; gap: var(--sp-1); justify-items: start;

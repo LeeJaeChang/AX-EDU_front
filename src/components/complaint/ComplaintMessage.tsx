@@ -50,6 +50,7 @@ export default function ComplaintMessage({ m, viewerRole, onOpenComplaint }: Pro
         <SummaryCardView
           card={complaint.summaryCard}
           compact
+          showEmotion={viewerRole !== 'PARENT'}
           footer={
             viewerRole === 'TEACHER' && onOpenComplaint ? (
               <button type="button" className="scard__cta" onClick={() => onOpenComplaint(complaint.id)}>

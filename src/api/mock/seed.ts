@@ -58,7 +58,8 @@ export function seed() {
     '아이 수행평가 점수가 왜 이렇게 낮은지 이해가 안 됩니다!! 발표 준비를 3주나 했는데 감점 이유를 아무도 설명해 주지 않았어요. 아이가 많이 속상해서 울었어요. 채점 기준표를 보여 주시고 감점 사유를 알려 주세요. 연락은 전화로 오후 4시~5시에 주세요.';
   const createdAt = '2026-11-13T20:10:00+09:00';
   const submittedAt = '2026-11-13T20:14:00+09:00';
-  const card = { ...buildCard(original, S5, createdAt), version: 1, confirmedByParentAt: submittedAt };
+  // 데모: 며칠 안에 답을 바라는, 감정이 격해진 학부모의 카드
+  const card = { ...buildCard(original, S5, createdAt), urgency: { level: 'SOON' as const, reason: null }, version: 1, confirmedByParentAt: submittedAt };
   const c: ComplaintRow = {
     id: 'cmp_seed1',
     roomId: 'room_p2',

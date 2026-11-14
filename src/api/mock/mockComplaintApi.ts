@@ -75,11 +75,12 @@ function load(id: string): ComplaintRow {
 }
 
 const latestCard = (c: ComplaintRow) => c.cards[c.cards.length - 1] ?? null;
+/** 내부 기록을 빼고 응답 모양으로. 학부모 마음 상태(parentEmotion)는 교사·민원대응팀에게만 준다 */
 const stripCard = (card: CardRow | null): SummaryCard | null => {
   if (!card) return null;
-  const { source: _s, revisionInstruction: _r, suggestions: _g, ...rest } = card;
+  const { source: _s, revisionInstruction: _r, suggestions: _g, parentEmotion, ...rest } = card;
   void _s, void _r, void _g;
-  return clone(rest);
+  return clone(me().role === 'PARENT' ? rest : { ...rest, parentEmotion });
 };
 
 /** 역할별 응답 모양. 교사에게는 학부모 원문과 AI 설명을 빼고, 제출된 카드만 준다 (명세서 3.5, 7.7) */
@@ -103,6 +104,7 @@ function view(c: ComplaintRow): Complaint {
           consultation: clone(c.consultation),
           consultStage: PRE_SUBMIT.includes(c.status) && c.status !== 'CARD_DRAFTING' ? c.consult.stage : null,
           proposedTeacher: c.consult.teacherId ? clone(users[c.consult.teacherId]) : null,
+          category: c.consult.category,
         }),
     summaryCard: stripCard(card),
     teacherReply: clone(c.reply),
@@ -139,7 +141,7 @@ function runFirstReply(c: ComplaintRow) {
     (c as { retried?: boolean }).retried = true;
     throw new ApiError(422, 'AI_PROCESSING_FAILED', 'AI 응답이 늦어지고 있어요. 작성하신 내용은 저장되었으니 다시 시도해 주세요.', { complaintId: c.id });
   }
-  c.consultation.push(...startConsult(c.originalText, c.consult, ctx));
+  c.consultation.push(...startConsult(c.originalText, c.consult, ctx, c.consult.category));
 }
 
 const parentMessage = (content: string, value?: string): ConsultMessage => ({
@@ -169,6 +171,10 @@ export const mockComplaintApi: ComplaintApi = {
     }
     if (!parent.childStudentIds?.includes(body.studentId)) throw new ApiError(403, 'FORBIDDEN', '자녀로 등록된 학생이 아닙니다.');
     const content = checkContent(body.content);
+    const TAGS = ['LIFE_GUIDANCE', 'STUDY_EVALUATION', 'PEER_RELATION', 'SAFETY', 'ETC'];
+    if (body.category && !TAGS.includes(body.category)) {
+      throw new ApiError(400, 'VALIDATION_ERROR', '분류를 다시 골라 주세요.', { fields: { category: 'invalid' } });
+    }
 
     const c: ComplaintRow = {
       id: genId('cmp_'),
@@ -180,7 +186,7 @@ export const mockComplaintApi: ComplaintApi = {
       originalText: content,
       explanation: null,
       consultation: [],
-      consult: emptyConsult(),
+      consult: { ...emptyConsult(), category: body.category ?? null },
       cards: [],
       submittedVersion: null,
       reply: null,
@@ -297,6 +303,8 @@ export const mockComplaintApi: ComplaintApi = {
       requests: fields.requests ?? base.requests,
       preferredContact: fields.preferredContact ?? base.preferredContact,
       regulations: base.regulations, // 학부모가 고칠 수 없음
+      urgency: base.urgency,
+      parentEmotion: base.parentEmotion, // AI 판단 — 학부모가 고칠 수 없음
       confirmedByParentAt: null,
     };
     const errors: Record<string, string> = {};
